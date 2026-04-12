@@ -7,14 +7,28 @@ from supabase import create_client, Client
 from upstash_redis import Redis
 from typing import List, Optional
 
-load_dotenv()
+from pathlib import Path
+load_dotenv(dotenv_path=Path(__file__).parent / ".env")
 
 app = FastAPI(title="Kryonex API", description="FastAPI Backend for Kryonex Studio")
 
 # CORS configuration
+origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
+# Default origins for production and development
+default_origins = [
+    "https://kryonex.dev",
+    "https://www.kryonex.dev",
+    "https://kryonex-three.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:5000",
+]
+# Combine and filter empty strings
+allowed_origins = [o for o in set(origins + default_origins) if o]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("ALLOWED_ORIGINS", "*").split(","),
+    allow_origins=allowed_origins if "*" not in allowed_origins else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -35,8 +49,13 @@ supabase: Client = None
 if SUPABASE_URL and SUPABASE_KEY:
     try:
         supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-    except:
-        print("Supabase connection failed.")
+        print(f"--- Kryonex Engine Started ---")
+        print(f"Mode: {'Production (Vercel)' if os.getenv('VERCEL') else 'Local Development'}")
+        print(f"Database: Supabase Connected")
+        print(f"Redis: {'Connected' if REDIS_URL else 'Missing'}")
+        print(f"------------------------------")
+    except Exception as e:
+        print(f"Supabase connection failed: {str(e)}")
 
 # Models
 class ProjectModel(BaseModel):
