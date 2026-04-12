@@ -1,4 +1,9 @@
 import * as React from 'react';
+declare global {
+  interface Window {
+    google: any;
+  }
+}
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from '@/src/components/ui/Button';
@@ -85,6 +90,63 @@ export default function LoginPage() {
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+  React.useEffect(() => {
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!clientId || clientId.includes("YOUR")) return;
+
+    const handleCredentialResponse = async (response: any) => {
+      try {
+        setIsLoading(true);
+        const { error } = await supabase.auth.signInWithIdToken({
+          provider: 'google',
+          token: response.credential,
+        });
+        if (error) throw error;
+      } catch (error: any) {
+        toast.error('Google login failed: ' + error.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const initializeGoogle = () => {
+      if (window.google?.accounts?.id) {
+        window.google.accounts.id.initialize({
+          client_id: clientId,
+          callback: handleCredentialResponse,
+          auto_select: false,
+          cancel_on_tap_outside: true
+        });
+        
+        // Also render a hidden button to have the selection dialog ready
+        const googleBtnRoot = document.getElementById('google-signin-btn-hidden');
+        if (googleBtnRoot) {
+          window.google.accounts.id.renderButton(googleBtnRoot, {
+            theme: 'outline',
+            size: 'large',
+            type: 'standard',
+            shape: 'rectangular',
+            text: 'signin_with',
+            logo_alignment: 'left'
+          });
+        }
+      }
+    };
+
+    // Check if script is already loaded
+    if (window.google?.accounts?.id) {
+      initializeGoogle();
+    } else {
+      // Wait for script to load (async defer in index.html)
+      const checkInterval = setInterval(() => {
+        if (window.google?.accounts?.id) {
+          initializeGoogle();
+          clearInterval(checkInterval);
+        }
+      }, 100);
+    }
+  }, []);
 
   const handleResendOtp = async () => {
     if (!canResend) return;
@@ -208,20 +270,25 @@ export default function LoginPage() {
   };
 
   const handleGoogleLogin = async () => {
-    try {
-      const redirectUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? window.location.origin
-        : 'https://kryonex.dev';
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    
+    if (!clientId || clientId.includes("YOUR")) {
+      toast.error('Google Client ID not configured. Please see .env file.');
+      return;
+    }
 
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: redirectUrl
+    if (window.google?.accounts?.id) {
+      // Trigger the Google selection dialog
+      window.google.accounts.id.prompt((notification: any) => {
+        if (notification.isNotDisplayed()) {
+          // If One Tap is blocked/already shown, we can fall back to clicking the hidden button
+          const btn = document.querySelector('#google-signin-btn-hidden [role="button"]') as HTMLElement;
+          if (btn) btn.click();
+          else toast.error('Check your pop-up blocker or click the Google button again.');
         }
       });
-      if (error) throw error;
-    } catch (error: any) {
-      toast.error('Google login failed: ' + error.message);
+    } else {
+      toast.error('Google Sign-In is initializing. Please try again.');
     }
   };
 
@@ -309,6 +376,9 @@ export default function LoginPage() {
                     Google
                   </Button>
                 </div>
+
+                {/* Hidden container for Google's official button to ensure the dialog works */}
+                <div id="google-signin-btn-hidden" className="hidden" />
 
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">

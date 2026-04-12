@@ -156,10 +156,14 @@ export function ProjectDetailsModal({ project, onClose, isLiked, onToggleLike }:
                             ul: ({ children }) => <ul className="list-disc pl-5 mb-4 space-y-1">{children}</ul>,
                             ol: ({ children }) => <ol className="list-decimal pl-5 mb-4 space-y-1">{children}</ol>,
                             li: ({ children }) => <li className="mb-1">{children}</li>,
-                            code: ({ children }) => <code className="bg-slate-200 dark:bg-white/10 px-1.5 py-0.5 rounded text-xs font-mono">{children}</code>,
-                            pre: ({ children }) => <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg overflow-x-auto mb-4 font-mono text-xs">{children}</pre>,
-                            a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">{children}</a>,
-                            blockquote: ({ children }) => <blockquote className="border-l-4 border-slate-300 dark:border-graphite pl-4 italic mb-4">{children}</blockquote>,
+                            code: ({ children }) => <code className="bg-slate-100 dark:bg-white/10 px-1.5 py-0.5 rounded text-xs font-mono text-slate-900 dark:text-slate-200">{children}</code>,
+                            pre: ({ children }) => (
+                              <pre className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 p-4 rounded-lg overflow-x-auto mb-4 font-mono text-[11px] leading-relaxed shadow-sm dark:shadow-lg transition-colors">
+                                {children}
+                              </pre>
+                            ),
+                            a: ({ href, children }) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">{children}</a>,
+                            blockquote: ({ children }) => <blockquote className="border-l-4 border-slate-300 dark:border-graphite pl-4 italic mb-4 text-slate-500 dark:text-slate-400">{children}</blockquote>,
                           }}
                         >
                           {project.description}

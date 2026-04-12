@@ -64,8 +64,8 @@ function FileTreeNode({ file, depth = 0 }: { file: RepoFile; depth?: number }) {
     <div>
       <button
         onClick={() => file.type === 'dir' && setExpanded(!expanded)}
-        className={`w-full flex items-center gap-2 py-1 px-2 text-xs font-mono rounded-md transition-colors hover:bg-white/5 ${
-          file.type === 'dir' ? 'cursor-pointer text-slate-200' : 'cursor-default text-slate-400'
+        className={`w-full flex items-center gap-2 py-1 px-2 text-xs font-mono rounded-md transition-colors hover:bg-black/5 dark:hover:bg-white/5 ${
+          file.type === 'dir' ? 'cursor-pointer text-slate-700 dark:text-slate-200' : 'cursor-default text-slate-500 dark:text-slate-400'
         }`}
         style={{ paddingLeft: `${depth * 16 + 8}px` }}
       >
@@ -173,11 +173,11 @@ export function TechStackVisualizer({ project, onClose }: TechStackVisualizerPro
         ) 
       },
       style: {
-        background: 'rgba(255, 255, 255, 0.8)',
+        background: 'var(--node-bg, rgba(255, 255, 255, 0.9))',
         backdropFilter: 'blur(10px)',
-        border: '1px solid rgba(255, 255, 255, 0.6)',
+        border: '1px solid var(--node-border, rgba(0, 0, 0, 0.1))',
         borderRadius: '12px',
-        color: '#334155',
+        color: 'var(--node-text, #1e293b)',
         boxShadow: '0 10px 30px -15px rgba(0,0,0,0.1)',
       }
     });
@@ -204,11 +204,11 @@ export function TechStackVisualizer({ project, onClose }: TechStackVisualizerPro
             ) 
           },
           style: {
-            background: 'rgba(255, 255, 255, 0.6)',
+            background: 'var(--node-bg-sub, rgba(255, 255, 255, 0.7))',
             backdropFilter: 'blur(10px)',
-            border: '1px solid rgba(255, 255, 255, 0.4)',
+            border: '1px solid var(--node-border-sub, rgba(0, 0, 0, 0.05))',
             borderRadius: '8px',
-            color: '#334155',
+            color: 'var(--node-text-sub, #475569)',
           }
         });
 
@@ -292,7 +292,7 @@ export function TechStackVisualizer({ project, onClose }: TechStackVisualizerPro
                   onNodesChange={onNodesChange}
                   onEdgesChange={onEdgesChange}
                   fitView
-                  className="dark:bg-obsidian/0"
+                  className="theme-aware-flow"
                 >
                   <Controls className="bg-white/80 dark:bg-obsidian/80 backdrop-blur-md border-slate-200/50 dark:border-graphite/50" />
                   <Background color="#94a3b8" gap={16} />

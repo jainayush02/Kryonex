@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Project } from '@/src/types';
 import { Button } from '@/src/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/src/components/ui/Card';
-import { Filter, Search, ArrowRight, LogOut, Command, Mic, Activity, Server, Play, X, Settings, Plus, Share2, Network, Heart, ExternalLink, LayoutDashboard, FileText, Github, Menu } from 'lucide-react';
+import { Filter, Search, ArrowRight, LogOut, Command, Mic, Activity, Server, Play, X, Settings, Plus, Share2, Network, Heart, ExternalLink, LayoutDashboard, FileText, Github, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SettingsModal } from '@/src/components/SettingsModal';
 import { SubmitProjectModal } from '@/src/components/SubmitProjectModal';
@@ -30,6 +30,50 @@ export default function UserPortal() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const navigate = useNavigate();
+
+  React.useEffect(() => {
+    if (isMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMenuOpen]);
+  const categoryRef = React.useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = React.useState(false);
+  const [canScrollRight, setCanScrollRight] = React.useState(false);
+
+  const checkScroll = () => {
+    if (categoryRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = categoryRef.current;
+      setCanScrollLeft(scrollLeft > 5);
+      setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 5);
+    }
+  };
+
+  React.useEffect(() => {
+    checkScroll();
+    const current = categoryRef.current;
+    if (current) {
+      current.addEventListener('scroll', checkScroll);
+      window.addEventListener('resize', checkScroll);
+    }
+    return () => {
+      if (current) {
+        current.removeEventListener('scroll', checkScroll);
+        window.removeEventListener('resize', checkScroll);
+      }
+    };
+  }, [categories, isLoading]);
+
+  const scrollCategories = (direction: 'left' | 'right') => {
+    if (categoryRef.current) {
+      const scrollAmount = direction === 'left' ? -500 : 500;
+      categoryRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
 
   React.useEffect(() => {
     const savedLikes = localStorage.getItem('likedProjects');
@@ -170,8 +214,8 @@ export default function UserPortal() {
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 bottom-0 w-64 bg-white dark:bg-obsidian z-[70] md:hidden shadow-2xl flex flex-col border-l border-slate-200/50 dark:border-graphite/50"
+              transition={{ type: 'tween', ease: [0.32, 0.72, 0, 1], duration: 0.4 }}
+              className="fixed top-0 right-0 bottom-0 w-72 bg-white dark:bg-obsidian z-[70] md:hidden shadow-2xl flex flex-col border-l border-slate-200/50 dark:border-graphite/50 will-change-transform"
             >
               <div className="p-6 border-b border-slate-200/50 dark:border-graphite/50 flex items-center justify-between">
                 <span className="font-anta tracking-widest text-graphite dark:text-white uppercase font-bold">Menu</span>
@@ -368,32 +412,73 @@ export default function UserPortal() {
         {/* Filters + Search */}
         <section className="mb-10 border-t border-slate-200/50 dark:border-graphite/50 pt-6">
           <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => setSelectedCategory(null)}
-                className={`px-4 py-1.5 text-[10px] font-anta tracking-widest uppercase transition-all duration-200 border-b-2 ${selectedCategory === null
-                  ? 'border-graphite dark:border-white text-graphite dark:text-white'
-                  : 'border-transparent text-slate-400 hover:text-graphite dark:hover:text-white'
-                  }`}
+            <div className="relative group/slider w-full md:w-auto overflow-hidden">
+              <AnimatePresence>
+                {canScrollLeft && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute left-0 top-0 bottom-2 z-20 flex items-center pr-12 bg-gradient-to-r from-pearl via-pearl/90 to-transparent dark:from-obsidian dark:via-obsidian/90 pointer-events-none"
+                  >
+                    <button
+                      onClick={() => scrollCategories('left')}
+                      className="p-1 px-1.5 rounded-r-lg bg-white/80 dark:bg-white/10 backdrop-blur-md shadow-sm border-y border-r border-slate-200 dark:border-white/10 text-graphite dark:text-white pointer-events-auto hover:bg-white dark:hover:bg-white/20 transition-all"
+                    >
+                      <ChevronLeft size={14} />
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div 
+                ref={categoryRef}
+                className="flex overflow-x-auto flex-nowrap gap-2 pb-2 scrollbar-hide -mx-1 px-1 scroll-smooth"
               >
-                All
-              </button>
-              {isLoading ? (
-                [...Array(4)].map((_, i) => (
-                  <div key={i} className="h-6 w-16 bg-slate-200/50 dark:bg-white/10 rounded-full animate-pulse" />
-                ))
-              ) : categories.map((cat) => (
                 <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-1.5 text-[10px] font-anta tracking-widest uppercase transition-all duration-200 border-b-2 ${selectedCategory === cat
+                  onClick={() => setSelectedCategory(null)}
+                  className={`px-4 py-1.5 text-[10px] font-anta tracking-widest uppercase whitespace-nowrap transition-all duration-200 border-b-2 ${selectedCategory === null
                     ? 'border-graphite dark:border-white text-graphite dark:text-white'
                     : 'border-transparent text-slate-400 hover:text-graphite dark:hover:text-white'
                     }`}
                 >
-                  {cat}
+                  All
                 </button>
-              ))}
+                {isLoading ? (
+                  [...Array(4)].map((_, i) => (
+                    <div key={i} className="h-6 w-16 bg-slate-200/50 dark:bg-white/10 rounded-full animate-pulse" />
+                  ))
+                ) : categories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`px-4 py-1.5 text-[10px] font-anta tracking-widest uppercase whitespace-nowrap transition-all duration-200 border-b-2 ${selectedCategory === cat
+                      ? 'border-graphite dark:border-white text-graphite dark:text-white'
+                      : 'border-transparent text-slate-400 hover:text-graphite dark:hover:text-white'
+                      }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              <AnimatePresence>
+                {canScrollRight && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="absolute right-0 top-0 bottom-2 z-20 flex items-center pl-12 bg-gradient-to-l from-pearl via-pearl/90 to-transparent dark:from-obsidian dark:via-obsidian/90 pointer-events-none"
+                  >
+                    <button
+                      onClick={() => scrollCategories('right')}
+                      className="p-1 px-1.5 rounded-l-lg bg-white/80 dark:bg-white/10 backdrop-blur-md shadow-sm border-y border-l border-slate-200 dark:border-white/10 text-graphite dark:text-white pointer-events-auto hover:bg-white dark:hover:bg-white/20 transition-all"
+                    >
+                      <ChevronRight size={14} />
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
             <div className="relative w-full sm:w-64">
               <Command className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={14} />

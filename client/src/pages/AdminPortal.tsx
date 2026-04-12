@@ -28,6 +28,17 @@ export default function AdminPortal() {
   const navigate = useNavigate();
 
   React.useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMobileMenuOpen]);
+
+  React.useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
@@ -332,13 +343,13 @@ export default function AdminPortal() {
               onClick={() => setIsMobileMenuOpen(false)}
               className="fixed inset-0 bg-obsidian/40 backdrop-blur-sm z-[60] md:hidden"
             />
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 bottom-0 w-64 bg-white dark:bg-obsidian z-[70] md:hidden shadow-2xl flex flex-col border-l border-slate-200/50 dark:border-graphite/50"
-            >
+              <motion.div
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'tween', ease: [0.32, 0.72, 0, 1], duration: 0.4 }}
+                className="fixed top-0 right-0 bottom-0 w-72 bg-white dark:bg-obsidian z-[70] md:hidden shadow-2xl flex flex-col border-l border-slate-200/50 dark:border-graphite/50 will-change-transform"
+              >
               <div className="p-6 border-b border-slate-200/50 dark:border-graphite/50 flex items-center justify-between">
                 <span className="font-anta tracking-widest text-graphite dark:text-white uppercase font-bold">Admin Menu</span>
                 <button 
@@ -474,7 +485,7 @@ export default function AdminPortal() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-6 md:p-8 overflow-y-auto pb-24 md:pb-8">
+      <main className="flex-1 p-6 pt-24 md:p-8 md:pt-8 overflow-y-auto pb-24 md:pb-8">
         <div className="max-w-[1800px] mx-auto">
           <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-12">
             <div>
