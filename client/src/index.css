@@ -1,0 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=Anta&family=Iceland&family=Macondo&family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-anta: "Anta", sans-serif;
+  --color-obsidian: #0B0F19;
+  --color-pearl: #F8FAFC;
+  --color-graphite: #334155;
+  
+  --text-xs: clamp(11px, 0.5vw + 9px, 0.75rem);
+  --text-sm: clamp(12px, 0.8vw + 10px, 0.875rem);
+  --text-base: clamp(14px, 1vw + 12px, 1rem);
+  --text-lg: clamp(16px, 1.2vw + 14px, 1.125rem);
+  --text-xl: clamp(18px, 1.5vw + 16px, 1.25rem);
+  --text-2xl: clamp(20px, 2vw + 18px, 1.5rem);
+  --text-3xl: clamp(24px, 3vw + 20px, 1.875rem);
+  --text-4xl: clamp(28px, 4vw + 24px, 2.25rem);
+}
+
+@layer base {
+  body {
+    @apply font-sans antialiased bg-pearl text-graphite transition-colors duration-300;
+  }
+  .dark body {
+    @apply bg-obsidian text-slate-300;
+  }
+
+  /* Premium Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-400/20 rounded-full hover:bg-slate-400/40 transition-colors;
+  }
+  .dark ::-webkit-scrollbar-thumb {
+    @apply bg-graphite/40 hover:bg-graphite/60;
+  }
+}
+
+/* Shimmer Animation */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+

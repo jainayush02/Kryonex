@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kryonex By Ayush</title>
+  <meta name="description" content="A glassmorphism portfolio dashboard." />
+  <meta name="theme-color" content="#0d1117" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <script>
+    // Apply dark theme immediately before React mounts to avoid flash
+    const saved = localStorage.getItem('theme');
+    if (saved !== 'light') {
+      document.documentElement.classList.add('dark');
+    }
+  </script>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>

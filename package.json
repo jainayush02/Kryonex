@@ -1,0 +1,12 @@
+{
+  "name": "kryonex-monorepo",
+  "private": true,
+  "scripts": {
+    "dev": "python start.py",
+    "install-all": "npm install && npm install --prefix client && pip install -r server/requirements.txt",
+    "build": "npm run build --prefix client"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
