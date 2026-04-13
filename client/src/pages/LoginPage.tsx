@@ -528,7 +528,7 @@ export default function LoginPage() {
                     <div className="space-y-2">
                       <div className="px-1">
                         <label className="text-[10px] font-anta font-bold tracking-[0.15em] text-slate-500 dark:text-slate-400 uppercase">
-                          Access Key (Email)
+                          Email
                         </label>
                       </div>
                       <Input
@@ -544,7 +544,7 @@ export default function LoginPage() {
                     <div className="space-y-2">
                       <div className="flex justify-between items-center px-1">
                         <label className="text-[10px] font-anta font-bold tracking-[0.15em] text-slate-500 dark:text-slate-400 uppercase">
-                          Security Cipher
+                          Password
                         </label>
                         {!isSignUp && (
                           <button 
