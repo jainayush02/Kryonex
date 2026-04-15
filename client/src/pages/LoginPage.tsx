@@ -116,6 +116,8 @@ export default function LoginPage() {
           client_id: clientId,
           callback: handleCredentialResponse,
           auto_select: false,
+          itp_support: true,
+          use_fedcm_for_prompt: true,
           cancel_on_tap_outside: true
         });
         
@@ -278,13 +280,17 @@ export default function LoginPage() {
     }
 
     if (window.google?.accounts?.id) {
-      // Trigger the Google selection dialog
+      // Trigger the Google selection dialog (One Tap / FedCM)
       window.google.accounts.id.prompt((notification: any) => {
-        if (notification.isNotDisplayed()) {
-          // If One Tap is blocked/already shown, we can fall back to clicking the hidden button
+        if (notification.isNotDisplayed() || notification.isSkippedMoment() || notification.isDismissedMoment()) {
+          // If One Tap is blocked, dismissed, or already shown, try to trigger the hidden standard button
+          // Programmatically clicking the button is a fallback for when the prompt fails to show
           const btn = document.querySelector('#google-signin-btn-hidden [role="button"]') as HTMLElement;
-          if (btn) btn.click();
-          else toast.error('Check your pop-up blocker or click the Google button again.');
+          if (btn) {
+            btn.click();
+          } else if (notification.isNotDisplayed()) {
+            toast.error('Google Sign-In prompt was blocked. Please check your browser settings or try again.');
+          }
         }
       });
     } else {
