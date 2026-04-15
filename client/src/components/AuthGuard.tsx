@@ -8,7 +8,7 @@ interface AuthGuardProps {
   requireAdmin?: boolean;
 }
 
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL || 'ayushsancheti098@gmail.com';
 
 export function AuthGuard({ children, requireAdmin = false }: AuthGuardProps) {
   const [session, setSession] = useState<Session | null>(null);

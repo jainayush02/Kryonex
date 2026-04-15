@@ -4,7 +4,7 @@ import { Project } from '@/src/types';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/Card';
-import { Plus, Trash2, Edit2, LayoutDashboard, LogOut, Image as ImageIcon, Github, Activity, Loader2, Settings, Inbox, Check, X, Tags, GripVertical, Upload, ChevronLeft, ChevronRight, Menu } from 'lucide-react';
+import { Plus, Trash2, Edit2, LayoutDashboard, LogOut, Image as ImageIcon, Github, Activity, Loader2, Settings, Inbox, Check, X, Tags, GripVertical, Upload, ChevronLeft, ChevronRight, Menu, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SettingsModal } from '@/src/components/SettingsModal';
 import { getProjects, saveProjects, getCategories, saveCategories, createProject, updateProject, deleteProject, addCategory, deleteCategoryApi } from '@/src/lib/projects';
@@ -305,7 +305,12 @@ export default function AdminPortal() {
   });
 
   return (
-    <div className="min-h-screen bg-pearl dark:bg-obsidian flex transition-colors duration-300">
+    <motion.div 
+      initial={{ opacity: 0, filter: 'blur(5px)' }}
+      animate={{ opacity: 1, filter: 'blur(0px)' }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+      className="min-h-screen bg-pearl dark:bg-obsidian flex transition-colors duration-300"
+    >
       {/* Mobile Top Header */}
       <nav className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-obsidian/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-graphite/50 px-6 py-4 flex items-center justify-between transition-all duration-300">
         <div className="w-8 h-8 opacity-0">{/* Placeholder for balance */}</div>
@@ -403,6 +408,14 @@ export default function AdminPortal() {
                 </Button>
                 <Button 
                   variant="ghost" 
+                  className="w-full justify-start gap-4 text-slate-600 dark:text-slate-400"
+                  onClick={() => { navigate('/portal'); setIsMobileMenuOpen(false); }}
+                >
+                  <ExternalLink size={20} />
+                  <span className="font-anta tracking-wider">User Portal</span>
+                </Button>
+                <Button 
+                  variant="ghost" 
                   className="w-full justify-start gap-4 text-red-500"
                   onClick={async () => {
                     await supabase.auth.signOut();
@@ -469,6 +482,10 @@ export default function AdminPortal() {
           <Button variant="ghost" className="w-full justify-center lg:justify-start gap-3 text-slate-500 hover:text-graphite dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10" onClick={() => setIsSettingsOpen(true)}>
             <Settings size={18} />
             <span className="hidden lg:block font-anta tracking-wider">Settings</span>
+          </Button>
+          <Button variant="ghost" className="w-full justify-center lg:justify-start gap-3 text-slate-500 hover:text-graphite dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10" onClick={() => navigate('/portal')}>
+            <ExternalLink size={18} />
+            <span className="hidden lg:block font-anta tracking-wider">User Portal</span>
           </Button>
           <Button variant="ghost" className="w-full justify-center lg:justify-start gap-3 text-slate-500 hover:text-graphite dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10" onClick={async () => { await supabase.auth.signOut(); navigate('/'); }}>
             <LogOut size={18} />
@@ -825,6 +842,6 @@ export default function AdminPortal() {
 
 
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
-    </div>
+    </motion.div>
   );
 }

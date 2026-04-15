@@ -30,6 +30,7 @@ export default function UserPortal() {
   const [syncingProjects, setSyncingProjects] = React.useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = React.useState(true);
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const [isAdmin, setIsAdmin] = React.useState(false);
   const navigate = useNavigate();
 
   React.useEffect(() => {
@@ -161,12 +162,18 @@ export default function UserPortal() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [projectsData, categoriesData] = await Promise.all([
+        const [projectsData, categoriesData, { data: { session } }] = await Promise.all([
           getProjects(),
-          getCategories()
+          getCategories(),
+          supabase.auth.getSession()
         ]);
         setProjects(projectsData);
         setCategories(categoriesData);
+        
+        const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'ayushsancheti098@gmail.com';
+        if (session?.user?.email && session.user.email.toLowerCase() === adminEmail.toLowerCase()) {
+          setIsAdmin(true);
+        }
       } finally {
         setIsLoading(false);
       }
@@ -232,8 +239,12 @@ export default function UserPortal() {
   });
 
   return (
-    <div className="min-h-screen bg-pearl dark:bg-obsidian text-slate-700 dark:text-slate-300 transition-colors duration-300 relative overflow-hidden">
-
+    <motion.div 
+      initial={{ opacity: 0, filter: 'blur(5px)' }}
+      animate={{ opacity: 1, filter: 'blur(0px)' }}
+      transition={{ duration: 0.4, ease: 'easeOut' }}
+      className="min-h-screen bg-pearl dark:bg-obsidian text-slate-700 dark:text-slate-300 transition-colors duration-300 relative overflow-hidden"
+    >
       {/* Mobile Top Header */}
       <nav className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-obsidian/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-graphite/50 px-6 py-4 flex items-center justify-between transition-all duration-300">
         <div className="w-8 h-8 opacity-0">{/* Placeholder for balance */}</div>
@@ -305,6 +316,16 @@ export default function UserPortal() {
                   <Settings size={20} />
                   <span className="font-anta tracking-wider">Settings</span>
                 </Button>
+                {isAdmin && (
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start gap-4 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10"
+                    onClick={() => { navigate('/admin'); setIsMenuOpen(false); }}
+                  >
+                    <LayoutDashboard size={20} />
+                    <span className="font-anta tracking-wider">Admin Portal</span>
+                  </Button>
+                )}
               </div>
 
               <div className="p-6 border-t border-slate-200/50 dark:border-graphite/50 space-y-6">
@@ -357,6 +378,12 @@ export default function UserPortal() {
           <Button variant="ghost" size="sm" onClick={() => setIsSettingsOpen(true)} className="text-slate-500 hover:text-graphite dark:hover:text-white">
             <Settings size={20} />
           </Button>
+          {isAdmin && (
+            <Button variant="ghost" size="sm" onClick={() => navigate('/admin')} className="text-slate-500 hover:text-graphite dark:hover:text-white">
+              <LayoutDashboard size={18} className="mr-2" />
+              Admin Mode
+            </Button>
+          )}
           <Button variant="ghost" size="sm" onClick={async () => { await supabase.auth.signOut(); navigate('/'); }} className="text-slate-500 hover:text-graphite dark:hover:text-white">
             <LogOut size={18} className="mr-2" />
             Logout
@@ -830,6 +857,6 @@ export default function UserPortal() {
           });
         }}
       />
-    </div>
+    </motion.div>
   );
 }
