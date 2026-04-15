@@ -60,6 +60,26 @@ export default function App() {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
+    // Push notification prompt
+    if ('Notification' in window && Notification.permission === 'default') {
+      setTimeout(() => {
+        toast('Stay Updated', {
+          description: 'Enable push notifications for Kryonex updates and alerts.',
+          action: {
+            label: 'Enable',
+            onClick: () => {
+              Notification.requestPermission().then(perm => {
+                if (perm === 'granted') {
+                  new Notification('Kryonex Notifications', { body: 'You will now receive system updates!' });
+                }
+              });
+            }
+          },
+          duration: 10000,
+        });
+      }, 2000);
+    }
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);

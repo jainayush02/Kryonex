@@ -26,22 +26,33 @@ def main():
         print("Installing client dependencies...")
         run_command("npm install", client_dir)
         
-    # 3. Install server dependencies (Python)
+    # 3. Server dependencies (Python) with venv and uv
     server_dir = os.path.join(root_dir, "server")
-    print("Verifying server (Python) dependencies...")
-    run_command(f"{sys.executable} -m pip install -r requirements.txt", server_dir)
+    venv_dir = os.path.join(server_dir, ".venv")
+    
+    if platform.system() == "Windows":
+        venv_python = os.path.join(venv_dir, "Scripts", "python.exe")
+    else:
+        venv_python = os.path.join(venv_dir, "bin", "python")
+        
+    if not os.path.exists(venv_dir):
+        print("Creating Python virtual environment with uv...")
+        run_command(f"{sys.executable} -m uv venv .venv", server_dir)
+        
+    print("Verifying server (Python) dependencies with uv...")
+    # Using uv pip install targeting the .venv
+    run_command(f"{sys.executable} -m uv pip install --python .venv -r requirements.txt", server_dir)
 
     print("\nAll dependencies verified. Starting project...")
     print("Frontend: http://localhost:3000")
     print("Backend: http://localhost:5000\n")
     
     # 4. Run the project concurrently
-    # On Windows, we'll use a simple approach to run both
     if platform.system() == "Windows":
-        cmd = f'npx concurrently "npm run dev --prefix client" "{sys.executable} server/main.py"'
+        cmd = f'npx concurrently "npm run dev --prefix client" "{venv_python} server/main.py"'
         run_command(cmd, root_dir)
     else:
-        cmd = f'npx concurrently "npm run dev --prefix client" "python3 server/main.py"'
+        cmd = f'npx concurrently "npm run dev --prefix client" "{venv_python} server/main.py"'
         run_command(cmd, root_dir)
 
 if __name__ == "__main__":

@@ -3,13 +3,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Project } from '@/src/types';
 import { Button } from '@/src/components/ui/Button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/src/components/ui/Card';
-import { Filter, Search, ArrowRight, LogOut, Command, Mic, Activity, Server, Play, X, Settings, Plus, Share2, Network, Heart, ExternalLink, LayoutDashboard, FileText, Github, Menu, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Filter, Search, ArrowRight, LogOut, Command, Mic, Activity, Server, Play, X, Settings, Plus, Share2, Network, Heart, ExternalLink, LayoutDashboard, FileText, Github, Menu, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SettingsModal } from '@/src/components/SettingsModal';
 import { SubmitProjectModal } from '@/src/components/SubmitProjectModal';
 import { TechStackVisualizer } from '@/src/components/TechStackVisualizer';
 import { ProjectDetailsModal } from '@/src/components/ProjectDetailsModal';
-import { getProjects, getCategories } from '@/src/lib/projects';
+import { getProjects, getCategories, updateProject } from '@/src/lib/projects';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase';
 import logo from '../logo.png';
@@ -27,6 +27,7 @@ export default function UserPortal() {
   const [visualizerProject, setVisualizerProject] = React.useState<Project | null>(null);
   const [detailsProject, setDetailsProject] = React.useState<Project | null>(null);
   const [likedProjects, setLikedProjects] = React.useState<Set<string>>(new Set());
+  const [syncingProjects, setSyncingProjects] = React.useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = React.useState(true);
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const navigate = useNavigate();
@@ -94,6 +95,66 @@ export default function UserPortal() {
       localStorage.setItem('likedProjects', JSON.stringify(Array.from(newLikes)));
       return newLikes;
     });
+  };
+
+  const syncGitHub = async (e: React.MouseEvent, project: Project) => {
+    e.stopPropagation();
+    const gh = project.features?.find(f => f.startsWith('GH:'))?.substring(3) || (project.liveUrl?.includes('github.com') ? project.liveUrl : null);
+    if (!gh) {
+      toast.error('No GitHub URL linked to this project');
+      return;
+    }
+
+    setSyncingProjects(prev => new Set(prev).add(project.id));
+    toast('Syncing with GitHub...');
+
+    try {
+      const cleanUrl = gh.trim().replace(/\/$/, "");
+      const urlParts = cleanUrl.replace('https://github.com/', '').split('/');
+      const owner = urlParts[urlParts.length - 2];
+      const repo = urlParts[urlParts.length - 1].replace('.git', '');
+
+      const [repoResponse, langResponse, readmeResponse] = await Promise.all([
+        fetch(`https://api.github.com/repos/${owner}/${repo}`),
+        fetch(`https://api.github.com/repos/${owner}/${repo}/languages`),
+        fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
+          headers: { 'Accept': 'application/vnd.github.raw' }
+        })
+      ]);
+
+      if (!repoResponse.ok) throw new Error('Repository not found or private');
+      const data = await repoResponse.json();
+
+      let techStack = project.techStack || [];
+      if (langResponse.ok) {
+        const langs = await langResponse.json();
+        techStack = Object.keys(langs);
+      }
+
+      let readmeContent = project.description;
+      if (readmeResponse.ok) {
+        readmeContent = await readmeResponse.text();
+      }
+
+      const updatedProject = {
+        ...project,
+        title: data.name || project.title,
+        shortDescription: data.description || project.shortDescription,
+        description: readmeContent || project.description,
+        techStack: techStack.length > 0 ? techStack : (data.language ? [data.language] : project.techStack),
+      };
+
+      await updateProject(updatedProject);
+      toast.success('Successfully synced with GitHub');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to sync');
+    } finally {
+      setSyncingProjects(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(project.id);
+        return newSet;
+      });
+    }
   };
 
   React.useEffect(() => {
@@ -250,7 +311,7 @@ export default function UserPortal() {
                 <Button
                   variant="ghost"
                   className="w-full justify-start gap-4 text-red-500 hover:bg-red-50/50 dark:hover:bg-red-500/10"
-                  onClick={async () => { 
+                  onClick={async () => {
                     await supabase.auth.signOut();
                     navigate('/');
                   }}
@@ -306,7 +367,7 @@ export default function UserPortal() {
       {/* Main Content */}
       <main className="max-w-[1800px] mx-auto px-6 pt-32 md:pt-40 py-12 md:py-16 pb-12">
         {/* Header */}
-        <header className="mb-10 md:mb-14 flex flex-col md:flex-row md:items-end justify-between gap-8">
+        <header className="mb-10 md:mb-14 flex flex-col md:flex-row md:items-center justify-between gap-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -319,7 +380,7 @@ export default function UserPortal() {
               Studio.
             </h1>
             <p className="text-xs md:text-sm font-mono text-slate-500 dark:text-slate-400 max-w-xl mt-1">
-              A community index of autonomous systems, technical builds, and engineering explorations.
+              A centralized hub for AI agents, tech stacks, and cutting-edge projects
             </p>
           </motion.div>
 
@@ -431,7 +492,7 @@ export default function UserPortal() {
                 )}
               </AnimatePresence>
 
-              <div 
+              <div
                 ref={categoryRef}
                 className="flex overflow-x-auto flex-nowrap gap-2 pb-2 scrollbar-hide -mx-1 px-1 scroll-smooth"
               >
@@ -536,8 +597,7 @@ export default function UserPortal() {
                   className="h-full cursor-grab active:cursor-grabbing md:cursor-default md:active:cursor-default"
                 >
                   <Card
-                    className="group relative overflow-hidden border border-slate-200 bg-white/40 backdrop-blur-xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] hover:scale-[1.02] transition-all duration-300 flex flex-col h-full dark:bg-white/5 dark:border-graphite dark:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] pointer-events-none md:pointer-events-auto cursor-pointer"
-                    onClick={() => setDetailsProject(project)}
+                    className="group relative overflow-hidden border border-slate-200 bg-white/40 backdrop-blur-xl shadow-[0_20px_40px_-15px_rgba(0,0,0,0.05)] hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] hover:scale-[1.02] transition-all duration-300 flex flex-col h-full dark:bg-white/5 dark:border-graphite dark:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] pointer-events-none md:pointer-events-auto"
                   >
                     {/* Icon/Logo Indicator */}
                     <div className="pt-6 px-6 flex items-center justify-between">
@@ -662,6 +722,20 @@ export default function UserPortal() {
                           <ExternalLink size={14} className="group-hover/btn:translate-x-0.5 transition-transform" /> Visit
                         </Button>
                       </div>
+
+                      {/* GitHub Sync Button */}
+                      {(project.features?.find(f => f.startsWith('GH:')) || project.liveUrl?.includes('github.com')) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full gap-2 mt-2 h-9 text-[10px] sm:text-xs border-dashed border-slate-300 dark:border-graphite text-slate-500 hover:text-graphite dark:hover:text-white"
+                          onClick={(e) => syncGitHub(e, project)}
+                          disabled={syncingProjects.has(project.id)}
+                        >
+                          <RefreshCw size={14} className={syncingProjects.has(project.id) ? 'animate-spin' : ''} />
+                          {syncingProjects.has(project.id) ? 'Syncing...' : 'Sync GitHub'}
+                        </Button>
+                      )}
                     </div>
                   </Card>
                 </motion.div>
