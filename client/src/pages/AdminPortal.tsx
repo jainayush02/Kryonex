@@ -348,14 +348,14 @@ export default function AdminPortal() {
               onClick={() => setIsMobileMenuOpen(false)}
               className="fixed inset-0 bg-obsidian/40 backdrop-blur-sm z-[60] md:hidden"
             />
-              <motion.div
-                initial={{ x: '100%' }}
-                animate={{ x: 0 }}
-                exit={{ x: '100%' }}
-                transition={{ type: 'tween', ease: [0.32, 0.72, 0, 1], duration: 0.4 }}
-                className="fixed top-0 right-0 bottom-0 w-72 bg-white dark:bg-obsidian z-[70] md:hidden shadow-2xl flex flex-col border-l border-slate-200/50 dark:border-graphite/50 will-change-transform"
-              >
-              <div className="p-6 border-b border-slate-200/50 dark:border-graphite/50 flex items-center justify-between">
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'tween', ease: [0.32, 0.72, 0, 1], duration: 0.4 }}
+              className="fixed top-0 right-0 h-[100dvh] w-72 bg-white dark:bg-obsidian z-[70] md:hidden shadow-2xl flex flex-col border-l border-slate-200/50 dark:border-graphite/50 will-change-transform"
+            >
+              <div className="p-6 border-b border-slate-200/50 dark:border-graphite/50 flex items-center justify-between flex-shrink-0">
                 <span className="font-anta tracking-widest text-graphite dark:text-white uppercase font-bold">Admin Menu</span>
                 <button 
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -365,7 +365,7 @@ export default function AdminPortal() {
                 </button>
               </div>
 
-              <div className="flex-1 p-6 space-y-2">
+              <div className="flex-1 p-6 space-y-2 overflow-y-auto custom-scrollbar">
                 <Button 
                   variant={activeTab === 'projects' ? 'secondary' : 'ghost'} 
                   className="w-full justify-start gap-4"
@@ -397,7 +397,7 @@ export default function AdminPortal() {
                 </Button>
               </div>
 
-              <div className="p-6 border-t border-slate-200/50 dark:border-graphite/50 space-y-4">
+              <div className="p-6 border-t border-slate-200/50 dark:border-graphite/50 space-y-4 flex-shrink-0 bg-white/50 dark:bg-obsidian/50 backdrop-blur-md">
                 <Button 
                   variant="ghost" 
                   className="w-full justify-start gap-4 text-slate-600 dark:text-slate-400"
@@ -439,7 +439,7 @@ export default function AdminPortal() {
       </AnimatePresence>
 
       {/* Sidebar (Desktop/Tablet) */}
-      <aside className="w-20 lg:w-64 bg-white/40 dark:bg-obsidian/40 backdrop-blur-xl border-r border-slate-200/50 dark:border-graphite/50 hidden md:flex flex-col transition-all duration-300">
+      <aside className="w-20 lg:w-64 h-screen sticky top-0 bg-white/40 dark:bg-obsidian/40 backdrop-blur-xl border-r border-slate-200/50 dark:border-graphite/50 hidden md:flex flex-col transition-all duration-300">
         <div className="p-6 border-b border-slate-200/50 dark:border-graphite/50 flex justify-center lg:justify-start">
           <div className="flex items-center gap-2">
             <div className="w-48 h-20 flex items-center justify-center overflow-hidden">
@@ -502,7 +502,7 @@ export default function AdminPortal() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 p-6 pt-24 md:p-8 md:pt-8 overflow-y-auto pb-24 md:pb-8">
+      <main className="flex-1 p-6 pt-20 md:p-8 md:pt-8 overflow-y-auto pb-24 md:pb-8">
         <div className="max-w-[1800px] mx-auto">
           <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-12">
             <div>

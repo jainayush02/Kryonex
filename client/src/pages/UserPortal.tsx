@@ -287,9 +287,9 @@ export default function UserPortal() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'tween', ease: [0.32, 0.72, 0, 1], duration: 0.4 }}
-              className="fixed top-0 right-0 bottom-0 w-72 bg-white dark:bg-obsidian z-[70] md:hidden shadow-2xl flex flex-col border-l border-slate-200/50 dark:border-graphite/50 will-change-transform"
+              className="fixed top-0 right-0 h-[100dvh] w-72 bg-white dark:bg-obsidian z-[70] md:hidden shadow-2xl flex flex-col border-l border-slate-200/50 dark:border-graphite/50 will-change-transform"
             >
-              <div className="p-6 border-b border-slate-200/50 dark:border-graphite/50 flex items-center justify-between">
+              <div className="p-6 border-b border-slate-200/50 dark:border-graphite/50 flex items-center justify-between flex-shrink-0">
                 <span className="font-anta tracking-widest text-graphite dark:text-white uppercase font-bold">Menu</span>
                 <button
                   onClick={() => setIsMenuOpen(false)}
@@ -299,7 +299,7 @@ export default function UserPortal() {
                 </button>
               </div>
 
-              <div className="flex-1 p-6 space-y-4">
+              <div className="flex-1 p-6 space-y-4 overflow-y-auto custom-scrollbar">
                 <Button
                   variant="ghost"
                   className="w-full justify-start gap-4 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10"
@@ -328,7 +328,7 @@ export default function UserPortal() {
                 )}
               </div>
 
-              <div className="p-6 border-t border-slate-200/50 dark:border-graphite/50 space-y-6">
+              <div className="p-6 border-t border-slate-200/50 dark:border-graphite/50 space-y-6 flex-shrink-0 bg-white/50 dark:bg-obsidian/50 backdrop-blur-md">
                 <Button
                   variant="ghost"
                   className="w-full justify-start gap-4 text-red-500 hover:bg-red-50/50 dark:hover:bg-red-500/10"
@@ -392,7 +392,7 @@ export default function UserPortal() {
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-[1800px] mx-auto px-6 pt-32 md:pt-40 py-12 md:py-16 pb-12">
+      <main className="max-w-[1800px] mx-auto px-6 pt-24 md:pt-40 py-12 md:py-16 pb-12">
         {/* Header */}
         <header className="mb-10 md:mb-14 flex flex-col md:flex-row md:items-center justify-between gap-8">
           <motion.div
