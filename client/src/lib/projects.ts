@@ -1,12 +1,23 @@
 import { Project } from '../types';
+import { supabase } from './supabase';
 
 const API_URL = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
   ? 'http://localhost:5000/api'
   : (import.meta.env.VITE_API_URL || '/api');
 
+const getAuthHeaders = async () => {
+  const { data: { session } } = await supabase.auth.getSession();
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${session?.access_token || ''}`
+  };
+};
+
 export const getProjects = async (): Promise<Project[]> => {
   try {
-    const response = await fetch(`${API_URL}/projects`);
+    const response = await fetch(`${API_URL}/projects?t=${Date.now()}`, {
+      cache: 'no-store',
+    });
     if (!response.ok) throw new Error('Failed to fetch projects');
     const data = await response.json();
     const projects = Array.isArray(data) ? data : (data.data && Array.isArray(data.data) ? data.data : []);
@@ -28,7 +39,7 @@ export const createProject = async (project: Project): Promise<Project> => {
   try {
     const response = await fetch(`${API_URL}/projects`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await getAuthHeaders(),
       body: JSON.stringify(project),
     });
     if (!response.ok) throw new Error('Failed to create project');
@@ -45,7 +56,7 @@ export const updateProject = async (project: Project): Promise<Project> => {
   try {
     const response = await fetch(`${API_URL}/projects/${project.id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await getAuthHeaders(),
       body: JSON.stringify(project),
     });
     if (!response.ok) throw new Error('Failed to update project');
@@ -62,6 +73,7 @@ export const deleteProject = async (id: string): Promise<void> => {
   try {
     const response = await fetch(`${API_URL}/projects/${id}`, {
       method: 'DELETE',
+      headers: await getAuthHeaders(),
     });
     if (!response.ok) {
       const errorData = await response.json();
@@ -79,7 +91,7 @@ export const saveProjects = async (projects: Project[]) => {
     const orderData = projects.map(p => ({ id: p.id, display_order: p.display_order }));
     const response = await fetch(`${API_URL}/projects/reorder`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await getAuthHeaders(),
       body: JSON.stringify(orderData),
     });
     if (!response.ok) throw new Error('Failed to save project order');
@@ -103,7 +115,7 @@ export const addCategory = async (name: string): Promise<void> => {
   try {
     const response = await fetch(`${API_URL}/categories`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await getAuthHeaders(),
       body: JSON.stringify({ name }),
     });
     if (!response.ok) throw new Error('Failed to add category');
@@ -118,6 +130,7 @@ export const deleteCategoryApi = async (name: string): Promise<void> => {
   try {
     const response = await fetch(`${API_URL}/categories/${name}`, {
       method: 'DELETE',
+      headers: await getAuthHeaders(),
     });
     if (!response.ok) throw new Error('Failed to delete category');
     window.dispatchEvent(new Event('categories_updated'));
@@ -130,4 +143,69 @@ export const deleteCategoryApi = async (name: string): Promise<void> => {
 export const saveCategories = (categories: string[]) => {
   // Broadcasting local update event
   window.dispatchEvent(new Event('categories_updated'));
+};
+
+export interface SiteSettings {
+  allow_publish: boolean;
+}
+
+export interface VaultItem {
+  id: string;
+  name: string;
+  username?: string;
+  key: string;
+  description?: string;
+  createdAt: string;
+}
+
+export const getSettings = async (): Promise<SiteSettings> => {
+  try {
+    const response = await fetch(`${API_URL}/settings`);
+    if (!response.ok) throw new Error('Failed to fetch settings');
+    return await response.json();
+  } catch (error) {
+    return { allow_publish: true };
+  }
+};
+
+export const updateSettings = async (settings: SiteSettings): Promise<void> => {
+  try {
+    const response = await fetch(`${API_URL}/settings`, {
+      method: 'POST',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify(settings),
+    });
+    if (!response.ok) throw new Error('Failed to update settings');
+    window.dispatchEvent(new Event('settings_updated'));
+  } catch (error) {
+    console.error('Error updating settings:', error);
+    throw error;
+  }
+};
+
+export const getVault = async (): Promise<VaultItem[]> => {
+  try {
+    const response = await fetch(`${API_URL}/admin/vault`, {
+      headers: await getAuthHeaders(),
+    });
+    if (!response.ok) throw new Error('Failed to fetch vault');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching vault:', error);
+    return [];
+  }
+};
+
+export const updateVault = async (vault: VaultItem[]): Promise<void> => {
+  try {
+    const response = await fetch(`${API_URL}/admin/vault`, {
+      method: 'POST',
+      headers: await getAuthHeaders(),
+      body: JSON.stringify(vault),
+    });
+    if (!response.ok) throw new Error('Failed to update vault');
+  } catch (error) {
+    console.error('Error updating vault:', error);
+    throw error;
+  }
 };

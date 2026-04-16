@@ -44,13 +44,13 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-slate-900/20 dark:bg-obsidian/80 backdrop-blur-sm"
+            className="absolute inset-0 bg-slate-900/40 dark:bg-obsidian/90 backdrop-blur-md"
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 30 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 30 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ type: 'spring', damping: 28, stiffness: 350 }}
             className="relative w-full max-w-lg bg-white/80 dark:bg-obsidian/80 backdrop-blur-2xl border border-slate-200 dark:border-graphite rounded-2xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.2)] overflow-hidden"
           >
             <div className="p-6 border-b border-slate-200 dark:border-graphite/50 flex justify-between items-center">

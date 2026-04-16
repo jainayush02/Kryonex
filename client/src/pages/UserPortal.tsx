@@ -9,7 +9,7 @@ import { SettingsModal } from '@/src/components/SettingsModal';
 import { SubmitProjectModal } from '@/src/components/SubmitProjectModal';
 import { TechStackVisualizer } from '@/src/components/TechStackVisualizer';
 import { ProjectDetailsModal } from '@/src/components/ProjectDetailsModal';
-import { getProjects, getCategories, updateProject } from '@/src/lib/projects';
+import { getProjects, getCategories, updateProject, getSettings, SiteSettings } from '@/src/lib/projects';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase';
 import logo from '../logo.png';
@@ -31,6 +31,7 @@ export default function UserPortal() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [isAdmin, setIsAdmin] = React.useState(false);
+  const [siteSettings, setSiteSettings] = React.useState<SiteSettings>({ allow_publish: false });
   const navigate = useNavigate();
 
   React.useEffect(() => {
@@ -162,14 +163,16 @@ export default function UserPortal() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [projectsData, categoriesData, { data: { session } }] = await Promise.all([
+        const [projectsData, categoriesData, settingsData, { data: { session } }] = await Promise.all([
           getProjects(),
           getCategories(),
+          getSettings(),
           supabase.auth.getSession()
         ]);
         setProjects(projectsData);
         setCategories(categoriesData);
-        
+        setSiteSettings(settingsData);
+
         const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'ayushsancheti098@gmail.com';
         if (session?.user?.email && session.user.email.toLowerCase() === adminEmail.toLowerCase()) {
           setIsAdmin(true);
@@ -185,6 +188,22 @@ export default function UserPortal() {
     window.addEventListener('projects_updated', handleProjectsUpdate);
     window.addEventListener('categories_updated', handleCategoriesUpdate);
 
+    // Live Supabase Sync
+    const channel = supabase
+      .channel('ui-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects_v2' }, () => {
+        handleProjectsUpdate();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
+        handleCategoriesUpdate();
+      })
+      .subscribe();
+
+    // Polling Fallback (Safety Sync every 15s)
+    const pollInterval = setInterval(() => {
+      handleProjectsUpdate();
+    }, 15000);
+
     // Swipe hint for mobile
     const hasShownHint = localStorage.getItem('hasShownSwipeHint');
     if (!hasShownHint && window.innerWidth < 768) {
@@ -197,6 +216,8 @@ export default function UserPortal() {
     return () => {
       window.removeEventListener('projects_updated', handleProjectsUpdate);
       window.removeEventListener('categories_updated', handleCategoriesUpdate);
+      supabase.removeChannel(channel);
+      clearInterval(pollInterval);
     };
   }, []);
 
@@ -239,7 +260,7 @@ export default function UserPortal() {
   });
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0, filter: 'blur(5px)' }}
       animate={{ opacity: 1, filter: 'blur(0px)' }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
@@ -300,14 +321,16 @@ export default function UserPortal() {
               </div>
 
               <div className="flex-1 p-6 space-y-4 overflow-y-auto custom-scrollbar">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start gap-4 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10"
-                  onClick={() => { setIsSubmitOpen(true); setIsMenuOpen(false); }}
-                >
-                  <Plus size={20} />
-                  <span className="font-anta tracking-wider">Add Project</span>
-                </Button>
+                {!isLoading && siteSettings.allow_publish && (
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start gap-4 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10"
+                    onClick={() => { setIsSubmitOpen(true); setIsMenuOpen(false); }}
+                  >
+                    <Plus size={20} />
+                    <span className="font-anta tracking-wider">Add Project</span>
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   className="w-full justify-start gap-4 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10"
@@ -372,9 +395,11 @@ export default function UserPortal() {
           </div>
         </div>
         <div className="flex items-center gap-2 md:gap-4">
-          <Button variant="secondary" size="sm" onClick={() => setIsSubmitOpen(true)} className="hidden md:flex gap-2">
-            <Plus size={16} /> Publish Project
-          </Button>
+          {!isLoading && siteSettings.allow_publish && (
+            <Button variant="secondary" size="sm" onClick={() => setIsSubmitOpen(true)} className="hidden md:flex gap-2">
+              <Plus size={16} /> Publish Project
+            </Button>
+          )}
           <Button variant="ghost" size="sm" onClick={() => setIsSettingsOpen(true)} className="text-slate-500 hover:text-graphite dark:hover:text-white">
             <Settings size={20} />
           </Button>
@@ -420,7 +445,7 @@ export default function UserPortal() {
             {/* Tier 1: Core Metrics */}
             <div className="flex items-center justify-between bg-white/40 dark:bg-white/5 p-4 rounded-xl border border-slate-200/50 dark:border-graphite shadow-[0_10px_30px_-10px_rgba(0,0,0,0.05)] dark:shadow-[0_10px_30px_-10px_rgba(0,0,0,0.2)] backdrop-blur-md relative overflow-hidden">
               <div className="flex flex-col relative z-10">
-                <span className="text-[9px] font-anta tracking-widest text-slate-500 dark:text-slate-400 uppercase mb-1">Index Size</span>
+                <span className="text-[9px] font-anta tracking-widest text-slate-500 dark:text-slate-400 uppercase mb-1">Projects</span>
                 {isLoading ? (
                   <div className="h-6 w-8 bg-slate-200 dark:bg-white/10 rounded animate-pulse" />
                 ) : (
@@ -433,7 +458,7 @@ export default function UserPortal() {
               <div className="w-px h-8 bg-slate-200 dark:bg-graphite relative z-10"></div>
 
               <div className="flex flex-col relative z-10">
-                <span className="text-[9px] font-anta tracking-widest text-slate-500 dark:text-slate-400 uppercase mb-1">Classes</span>
+                <span className="text-[9px] font-anta tracking-widest text-slate-500 dark:text-slate-400 uppercase mb-1">Categories</span>
                 {isLoading ? (
                   <div className="h-6 w-8 bg-slate-200 dark:bg-white/10 rounded animate-pulse" />
                 ) : (
@@ -698,55 +723,59 @@ export default function UserPortal() {
                       )}
                     </CardHeader>
 
-                    {/* Bottom Actions - 2 Column Grid */}
-                    <div className="px-6 pb-6 mt-auto pointer-events-auto flex flex-col gap-2">
-                      <div className="grid grid-cols-2 gap-2">
+                    {/* Bottom Actions - 4 Button Row */}
+                    <div className="px-6 pb-6 mt-auto pointer-events-auto flex flex-col gap-3">
+                      <div className="grid grid-cols-4 gap-1.5">
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="w-full text-[10px] sm:text-xs gap-1.5 border border-slate-200/50 dark:border-graphite/50 hover:bg-white/50 dark:hover:bg-white/10 h-9"
+                          className="px-0 h-9 border border-slate-200/50 dark:border-graphite/50 hover:bg-white/50 dark:hover:bg-white/10"
                           onClick={(e) => { e.stopPropagation(); setVisualizerProject(project); }}
+                          title="STACK"
                         >
-                          <Network size={14} /> Stack
+                          <Network size={14} className="sm:mr-1.5" /> <span className="hidden sm:inline text-[9px]">STACK</span>
                         </Button>
 
                         <Button
                           variant="ghost"
                           size="sm"
-                          className={`w-full gap-1.5 border border-slate-200/50 dark:border-graphite/50 text-[10px] sm:text-xs h-9 ${!project.features?.find(f => f.startsWith('GH:')) && !project.liveUrl?.includes('github.com') ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white/50 dark:hover:bg-white/10'}`}
+                          className={`px-0 h-9 border border-slate-200/50 dark:border-graphite/50 ${!project.features?.find(f => f.startsWith('GH:')) && !project.liveUrl?.includes('github.com') ? 'opacity-30 cursor-not-allowed' : 'hover:bg-white/50 dark:hover:bg-white/10'}`}
                           onClick={(e) => {
                             e.stopPropagation();
                             const gh = project.features?.find(f => f.startsWith('GH:'))?.substring(3) || (project.liveUrl?.includes('github.com') ? project.liveUrl : null);
                             if (gh) window.open(gh, '_blank');
                           }}
+                          title="REPO"
                         >
-                          <Github size={14} /> Repo
+                          <Github size={14} className="sm:mr-1.5" /> <span className="hidden sm:inline text-[9px]">REPO</span>
                         </Button>
 
                         <Button
                           variant="secondary"
                           size="sm"
-                          className="w-full gap-1.5 hover:bg-slate-200 dark:hover:bg-white/20 transition-all text-[10px] sm:text-xs h-9"
+                          className="px-0 h-9 hover:bg-slate-200 dark:hover:bg-white/20 transition-all font-bold"
                           onClick={(e) => {
                             e.stopPropagation();
                             setDetailsProject(project);
                           }}
+                          title="README"
                         >
-                          <FileText size={14} /> README
+                          <FileText size={14} className="sm:mr-1.5" /> <span className="hidden sm:inline text-[9px]">README</span>
                         </Button>
 
                         <Button
                           variant="ghost"
                           size="sm"
-                          className={`w-full gap-1.5 border border-graphite/10 dark:border-white/10 hover:bg-graphite hover:text-white dark:hover:bg-white dark:hover:text-obsidian transition-all group/btn text-[10px] sm:text-xs h-9 ${!project.liveUrl || project.liveUrl.includes('github.com') ? 'opacity-30 cursor-not-allowed' : ''}`}
+                          className={`px-0 h-9 border border-graphite/10 dark:border-white/10 hover:bg-graphite hover:text-white dark:hover:bg-white dark:hover:text-obsidian transition-all group/btn ${!project.liveUrl || project.liveUrl.includes('github.com') ? 'opacity-30 cursor-not-allowed' : ''}`}
                           onClick={(e) => {
                             e.stopPropagation();
                             if (project.liveUrl && !project.liveUrl.includes('github.com')) {
                               window.open(project.liveUrl, '_blank');
                             }
                           }}
+                          title="LIVE"
                         >
-                          <ExternalLink size={14} className="group-hover/btn:translate-x-0.5 transition-transform" /> Visit
+                          <ExternalLink size={14} className="group-hover/btn:translate-x-0.5 transition-transform sm:mr-1.5" /> <span className="hidden sm:inline text-[9px]">LIVE</span>
                         </Button>
                       </div>
 
@@ -838,7 +867,6 @@ export default function UserPortal() {
         </div>
       </footer>
 
-
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
       <SubmitProjectModal isOpen={isSubmitOpen} onClose={() => setIsSubmitOpen(false)} />
       <TechStackVisualizer project={visualizerProject} onClose={() => setVisualizerProject(null)} />
@@ -847,7 +875,6 @@ export default function UserPortal() {
         onClose={() => setDetailsProject(null)}
         isLiked={detailsProject ? likedProjects.has(detailsProject.id) : false}
         onToggleLike={(id) => {
-          // Keep the existing toggleLike logic but adapt it for the modal (which doesn't have an event object in the same way)
           setLikedProjects(prev => {
             const newLikes = new Set(prev);
             if (newLikes.has(id)) newLikes.delete(id);

@@ -14,9 +14,40 @@ import { WifiOff, RefreshCw } from 'lucide-react';
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { toast } from 'sonner';
 import { AuthGuard } from './components/AuthGuard';
+import { supabase } from './lib/supabase';
+import logo from './logo.png';
 
 export default function App() {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  
+  const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:5000/api'
+    : '/api';
+
+  const subscribeToPush = async () => {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      
+      // Get VAPID public key
+      const vapidResponse = await fetch(`${API_URL}/push/vapid-public-key`);
+      const { public_key } = await vapidResponse.json();
+      
+      // Subscribe
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: public_key
+      });
+      
+      // Send to backend
+      await fetch(`${API_URL}/push/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(subscription)
+      });
+    } catch (err) {
+      console.error('Push registration failed:', err);
+    }
+  };
 
   // PWA Update Awareness
   const {
@@ -54,6 +85,9 @@ export default function App() {
       document.documentElement.classList.remove('dark');
     }
 
+    // Register Push SW
+    navigator.serviceWorker.register('/push-sw.js').catch(err => console.error('Push SW registration failed', err));
+
     const handleOnline = () => setIsOffline(false);
     const handleOffline = () => setIsOffline(true);
 
@@ -71,6 +105,7 @@ export default function App() {
               Notification.requestPermission().then(perm => {
                 if (perm === 'granted') {
                   new Notification('Kryonex Notifications', { body: 'You will now receive system updates!' });
+                  subscribeToPush();
                 }
               });
             }
@@ -80,9 +115,34 @@ export default function App() {
       }, 2000);
     }
 
+    // Realtime Project Notifications
+    const channel = supabase
+      .channel('projects-tracker')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'projects_v2' },
+        (payload: any) => {
+          if (payload.new && payload.new.title) {
+            if (Notification.permission === 'granted') {
+              new Notification('New Project Published!', {
+                body: `${payload.new.title} by ${payload.new.authorName || 'Anonymous'}`,
+                icon: logo,
+              });
+            } else {
+              toast('New Project!', {
+                description: `${payload.new.title} is now available in the Studio.`,
+                icon: <RefreshCw size={16} />
+              });
+            }
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      supabase.removeChannel(channel);
     };
   }, []);
 

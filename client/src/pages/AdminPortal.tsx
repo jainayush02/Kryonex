@@ -4,10 +4,10 @@ import { Project } from '@/src/types';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/src/components/ui/Card';
-import { Plus, Trash2, Edit2, LayoutDashboard, LogOut, Image as ImageIcon, Github, Activity, Loader2, Settings, Inbox, Check, X, Tags, GripVertical, Upload, ChevronLeft, ChevronRight, Menu, ExternalLink } from 'lucide-react';
+import { Plus, Trash2, Edit2, LayoutDashboard, LogOut, Image as ImageIcon, Github, Activity, Loader2, Settings, Inbox, Check, X, Tags, GripVertical, Upload, ChevronLeft, ChevronRight, Menu, ExternalLink, Key, Eye, EyeOff, Lock, ShieldCheck, Copy, User, Save } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { SettingsModal } from '@/src/components/SettingsModal';
-import { getProjects, saveProjects, getCategories, saveCategories, createProject, updateProject, deleteProject, addCategory, deleteCategoryApi } from '@/src/lib/projects';
+import { getProjects, saveProjects, getCategories, saveCategories, createProject, updateProject, deleteProject, addCategory, deleteCategoryApi, getSettings, updateSettings, SiteSettings, getVault, updateVault, VaultItem } from '@/src/lib/projects';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase';
@@ -16,7 +16,8 @@ import logo from '../logo.png';
 export default function AdminPortal() {
   const [projects, setProjects] = React.useState<Project[]>([]);
   const [categories, setCategories] = React.useState<string[]>([]);
-  const [activeTab, setActiveTab] = React.useState<'projects' | 'requests' | 'categories'>('projects');
+  const [vault, setVault] = React.useState<VaultItem[]>([]);
+  const [activeTab, setActiveTab] = React.useState<'projects' | 'requests' | 'categories' | 'platform' | 'vault'>('projects');
   const [isAdding, setIsAdding] = React.useState(false);
   const [githubUrl, setGithubUrl] = React.useState('');
   const [isFetching, setIsFetching] = React.useState(false);
@@ -25,6 +26,7 @@ export default function AdminPortal() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSidebarExpanded, setIsSidebarExpanded] = React.useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [siteSettings, setSiteSettings] = React.useState<SiteSettings>({ allow_publish: true });
   const navigate = useNavigate();
 
   React.useEffect(() => {
@@ -42,12 +44,16 @@ export default function AdminPortal() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [projectsData, categoriesData] = await Promise.all([
+        const [projectsData, categoriesData, settingsData, vaultData] = await Promise.all([
           getProjects(),
-          getCategories()
+          getCategories(),
+          getSettings(),
+          getVault()
         ]);
         setProjects(projectsData);
         setCategories(categoriesData);
+        setSiteSettings(settingsData);
+        setVault(vaultData);
       } finally {
         setIsLoading(false);
       }
@@ -58,9 +64,28 @@ export default function AdminPortal() {
     const handleCategoriesUpdate = async () => setCategories(await getCategories());
     window.addEventListener('projects_updated', handleProjectsUpdate);
     window.addEventListener('categories_updated', handleCategoriesUpdate);
+
+    // Live Supabase Sync for Admin
+    const channel = supabase
+      .channel('admin-ui-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects_v2' }, () => {
+        handleProjectsUpdate();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => {
+        handleCategoriesUpdate();
+      })
+      .subscribe();
+
+    // Polling Fallback (Safety Sync every 15s)
+    const pollInterval = setInterval(() => {
+      handleProjectsUpdate();
+    }, 15000);
+
     return () => {
       window.removeEventListener('projects_updated', handleProjectsUpdate);
       window.removeEventListener('categories_updated', handleCategoriesUpdate);
+      supabase.removeChannel(channel);
+      clearInterval(pollInterval);
     };
   }, []);
 
@@ -73,6 +98,15 @@ export default function AdminPortal() {
     features: [],
     techStack: [],
   });
+
+  const [newVaultItem, setNewVaultItem] = React.useState<Partial<VaultItem>>({
+    name: '',
+    username: '',
+    key: '',
+    description: ''
+  });
+
+  const [visibleKeys, setVisibleKeys] = React.useState<Set<string>>(new Set());
 
   const toggleCategory = (cat: string) => {
     const current = newProject.categories || [];
@@ -214,6 +248,17 @@ export default function AdminPortal() {
       toast.success('Category deleted');
     } catch (error) {
       toast.error('Failed to delete category');
+    }
+  };
+
+  const handleTogglePublish = async () => {
+    const newSettings = { ...siteSettings, allow_publish: !siteSettings.allow_publish };
+    try {
+      await updateSettings(newSettings);
+      setSiteSettings(newSettings);
+      toast.success(`Publishing ${newSettings.allow_publish ? 'enabled' : 'disabled'}`);
+    } catch (error) {
+      toast.error('Failed to update settings');
     }
   };
 
@@ -395,6 +440,22 @@ export default function AdminPortal() {
                   <Tags size={20} />
                   <span className="font-anta tracking-wider">Categories</span>
                 </Button>
+                <Button 
+                  variant={activeTab === 'platform' ? 'secondary' : 'ghost'} 
+                  className="w-full justify-start gap-4"
+                  onClick={() => { setActiveTab('platform'); setIsMobileMenuOpen(false); }}
+                >
+                  <Settings size={20} />
+                  <span className="font-anta tracking-wider">Platform</span>
+                </Button>
+                <Button 
+                  variant={activeTab === 'vault' ? 'secondary' : 'ghost'} 
+                  className="w-full justify-start gap-4 text-purple-600 dark:text-purple-400"
+                  onClick={() => { setActiveTab('vault'); setIsMobileMenuOpen(false); }}
+                >
+                  <Lock size={20} />
+                  <span className="font-anta tracking-wider font-bold">Admin Vault</span>
+                </Button>
               </div>
 
               <div className="p-6 border-t border-slate-200/50 dark:border-graphite/50 space-y-4 flex-shrink-0 bg-white/50 dark:bg-obsidian/50 backdrop-blur-md">
@@ -477,6 +538,14 @@ export default function AdminPortal() {
             <Tags size={18} />
             <span className="hidden lg:block font-anta tracking-wider">Categories</span>
           </Button>
+          <Button variant={activeTab === 'platform' ? 'secondary' : 'ghost'} onClick={() => { setActiveTab('platform'); setIsAdding(false); }} className="w-full justify-center lg:justify-start gap-3 bg-white/60 dark:bg-white/10 text-graphite dark:text-white border-graphite/10 dark:border-white/10">
+            <Settings size={18} />
+            <span className="hidden lg:block font-anta tracking-wider">Platform</span>
+          </Button>
+          <Button variant={activeTab === 'vault' ? 'secondary' : 'ghost'} onClick={() => { setActiveTab('vault'); setIsAdding(false); }} className="w-full justify-center lg:justify-start gap-3 bg-white/60 dark:bg-white/10 text-purple-600 dark:text-purple-400 border-purple-100 dark:border-purple-900/30">
+            <Lock size={18} />
+            <span className="hidden lg:block font-anta tracking-wider font-bold">Admin Vault</span>
+          </Button>
         </nav>
         <div className="p-4 border-t border-slate-200/50 dark:border-graphite/50 flex flex-col gap-4 items-center lg:items-stretch">
           <Button variant="ghost" className="w-full justify-center lg:justify-start gap-3 text-slate-500 hover:text-graphite dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10" onClick={() => setIsSettingsOpen(true)}>
@@ -510,11 +579,15 @@ export default function AdminPortal() {
                 {activeTab === 'projects' && 'Project Management'}
                 {activeTab === 'requests' && 'Pending Requests'}
                 {activeTab === 'categories' && 'Category Management'}
+                {activeTab === 'platform' && 'Platform Settings'}
+                {activeTab === 'vault' && 'Admin Vault'}
               </h1>
               <p className="text-slate-500 dark:text-slate-400 mt-1">
                 {activeTab === 'projects' && 'Manage your portfolio works and categories.'}
                 {activeTab === 'requests' && 'Review and approve projects submitted by users.'}
                 {activeTab === 'categories' && 'Add or remove project categories.'}
+                {activeTab === 'platform' && 'Control global functional visibility and system behavior.'}
+                {activeTab === 'vault' && 'Securely store and manage your personal API keys and credentials.'}
               </p>
             </div>
             {activeTab === 'projects' && (
@@ -701,6 +774,186 @@ export default function AdminPortal() {
                   </Card>
                 ))}
               </div>
+            </div>
+          )}
+
+          {activeTab === 'platform' && (
+            <div className="space-y-6 max-w-2xl">
+              <Card className="bg-white/40 dark:bg-white/5 backdrop-blur-xl border border-slate-200 dark:border-graphite shadow-[0_10px_30px_-15px_rgba(0,0,0,0.05)] dark:shadow-[0_10px_30px_-15px_rgba(0,0,0,0.5)]">
+                <CardHeader>
+                  <CardTitle className="text-lg font-anta tracking-wider uppercase">User Portal Controls</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="flex items-center justify-between p-4 rounded-xl bg-slate-50/50 dark:bg-white/5 border border-slate-200/50 dark:border-graphite/50">
+                    <div>
+                      <div className="font-bold text-graphite dark:text-white">Allow Project Publishing</div>
+                      <div className="text-sm text-slate-500 dark:text-slate-400">Controls visibility of "Publish Project" button in User Portal</div>
+                    </div>
+                    <button 
+                      onClick={handleTogglePublish}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${siteSettings.allow_publish ? 'bg-graphite dark:bg-white' : 'bg-slate-200 dark:bg-graphite'}`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-obsidian transition-transform ${siteSettings.allow_publish ? 'translate-x-6' : 'translate-x-1'}`}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="p-4 rounded-xl border border-dashed border-slate-300 dark:border-graphite/50 text-center">
+                    <p className="text-xs text-slate-500 font-mono italic">More system controls will be available in the next core update.</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          {activeTab === 'vault' && (
+            <div className="space-y-8 max-w-5xl">
+              <Card className="bg-white/20 dark:bg-obsidian/10 backdrop-blur-2xl border-purple-500/10 dark:border-purple-500/10 shadow-[0_20px_40px_-15px_rgba(147,51,234,0.05)]">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
+                  <div>
+                    <CardTitle className="text-xl font-anta tracking-widest uppercase flex items-center gap-3 text-purple-600 dark:text-purple-400 opacity-80">
+                      <ShieldCheck size={24} />
+                      Credential Vault
+                    </CardTitle>
+                    <p className="text-sm text-slate-500 mt-1 uppercase tracking-tighter font-mono opacity-60">End-to-end Local Persistence Engine</p>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-6 rounded-2xl bg-purple-50/20 dark:bg-purple-900/5 border border-purple-100/20 dark:border-purple-900/20">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-anta uppercase tracking-widest text-purple-600/70 dark:text-purple-400/70">Service Name</label>
+                      <Input 
+                        placeholder="e.g. Groq / OpenAI" 
+                        value={newVaultItem.name}
+                        onChange={e => setNewVaultItem({ ...newVaultItem, name: e.target.value })}
+                        className="bg-white dark:bg-obsidian border-purple-200/50 dark:border-purple-900/50"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-anta uppercase tracking-widest text-purple-600/70 dark:text-purple-400/70">Username / Email</label>
+                      <div className="relative">
+                        <Input 
+                          placeholder="admin@kryonex.com" 
+                          value={newVaultItem.username}
+                          onChange={e => setNewVaultItem({ ...newVaultItem, username: e.target.value })}
+                          className="bg-white dark:bg-obsidian border-purple-200/50 dark:border-purple-900/50 pl-9"
+                        />
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-400" size={16} />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-anta uppercase tracking-widest text-purple-600/70 dark:text-purple-400/70">API Key / Credential</label>
+                      <div className="relative">
+                        <Input 
+                          type="password"
+                          placeholder="••••••••••••••••" 
+                          value={newVaultItem.key}
+                          onChange={e => setNewVaultItem({ ...newVaultItem, key: e.target.value })}
+                          className="bg-white dark:bg-obsidian border-purple-200/50 dark:border-purple-900/50 pl-9"
+                        />
+                        <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-400" size={16} />
+                      </div>
+                    </div>
+                    <div className="space-y-2 flex items-end">
+                      <Button 
+                        onClick={async () => {
+                          if (!newVaultItem.name || !newVaultItem.key) return;
+                          const newItem: VaultItem = {
+                            id: crypto.randomUUID(),
+                            name: newVaultItem.name,
+                            username: newVaultItem.username,
+                            key: newVaultItem.key,
+                            description: newVaultItem.description,
+                            createdAt: new Date().toISOString()
+                          };
+                          const newVault = [newItem, ...vault];
+                          await updateVault(newVault);
+                          setVault(newVault);
+                          setNewVaultItem({ name: '', username: '', key: '', description: '' });
+                          toast.success('Key encrypted and stored');
+                        }}
+                        size="sm"
+                        variant="ghost"
+                        className="h-10 w-10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/10 border border-purple-500/20 shrink-0"
+                      >
+                        <Save size={18} />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-anta uppercase tracking-widest text-slate-400 px-1">Secured Items ({vault.length})</h3>
+                    <div className="grid grid-cols-1 gap-3">
+                      {vault.length === 0 ? (
+                        <div className="text-center py-12 border-2 border-dashed border-slate-200 dark:border-graphite/30 rounded-2xl">
+                          <Lock className="mx-auto text-slate-300 dark:text-graphite mb-3" size={32} />
+                          <p className="text-sm font-anta text-slate-400 uppercase tracking-wider">Vault is Empty</p>
+                        </div>
+                      ) : vault.map((item) => (
+                        <div key={item.id} className="group relative grid grid-cols-[40px_160px_280px_1fr_auto] items-center gap-6 p-3.5 rounded-xl bg-white/5 dark:bg-white-[0.01] border border-slate-200/20 dark:border-graphite/10 hover:border-purple-500/20 transition-all duration-300 backdrop-blur-sm w-full">
+                          <div className="w-9 h-9 rounded-lg bg-purple-100/30 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0">
+                            <Key size={18} />
+                          </div>
+                          
+                          <div className="text-sm font-bold text-graphite dark:text-white uppercase tracking-wider truncate px-1">
+                            {item.name}
+                          </div>
+
+                          <div className="text-sm font-mono text-purple-500/60 dark:text-purple-400/60 italic truncate px-1">
+                            {item.username || "—"}
+                          </div>
+
+                          <div className="flex items-center gap-3 min-w-0 pr-4">
+                            <code className="text-sm font-mono text-slate-400/80 dark:text-slate-500/80 bg-slate-100/30 dark:bg-obsidian/50 px-4 py-1.5 rounded truncate flex-1 shadow-inner border border-slate-200/10 dark:border-graphite/10">
+                              {visibleKeys.has(item.id) ? item.key : "••••••••••••••••••••••••"}
+                            </code>
+                            
+                            <div className="flex items-center gap-1.5 shrink-0 ml-1">
+                              <button 
+                                onClick={() => {
+                                  const next = new Set(visibleKeys);
+                                  if (next.has(item.id)) next.delete(item.id);
+                                  else next.add(item.id);
+                                  setVisibleKeys(next);
+                                }}
+                                className="text-slate-400 hover:text-purple-500 transition-colors p-1.5 hover:bg-purple-500/5 rounded-md"
+                              >
+                                {visibleKeys.has(item.id) ? <EyeOff size={16} /> : <Eye size={16} />}
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  navigator.clipboard.writeText(item.key);
+                                  toast.success('Key copied');
+                                }}
+                                className="text-slate-400 hover:text-purple-500 transition-colors p-1.5 hover:bg-purple-500/5 rounded-md"
+                              >
+                                <Copy size={16} />
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-end min-w-[40px]">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="text-slate-400 hover:text-red-500 hover:bg-red-500/5 opacity-0 group-hover:opacity-100 transition-opacity h-9 w-9 p-0"
+                              onClick={async () => {
+                                const newVault = vault.filter(v => v.id !== item.id);
+                                await updateVault(newVault);
+                                setVault(newVault);
+                                toast.info('Credential purged');
+                              }}
+                            >
+                              <Trash2 size={18} />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           )}
 

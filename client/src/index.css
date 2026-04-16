@@ -25,6 +25,12 @@
     @apply font-sans antialiased bg-pearl text-graphite transition-colors duration-300;
   }
 
+  button, 
+  [role="button"],
+  .cursor-pointer {
+    cursor: pointer !important;
+  }
+
   .dark body {
     @apply bg-obsidian text-slate-300;
   }

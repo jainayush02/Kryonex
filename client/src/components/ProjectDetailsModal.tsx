@@ -64,7 +64,7 @@ import mermaid from 'mermaid';
 
 const MermaidRenderer = ({ code }: { code: string }) => {
   const ref = React.useRef<HTMLDivElement>(null);
-  
+
   React.useEffect(() => {
     mermaid.initialize({
       startOnLoad: false,
@@ -72,7 +72,7 @@ const MermaidRenderer = ({ code }: { code: string }) => {
       securityLevel: 'loose',
       fontFamily: 'Inter'
     });
-    
+
     if (ref.current) {
       const id = `mermaid-${Math.random().toString(36).slice(2, 9)}`;
       mermaid.render(id, code)
@@ -84,7 +84,7 @@ const MermaidRenderer = ({ code }: { code: string }) => {
         .catch(err => {
           console.error('Mermaid render error:', err);
           if (ref.current) {
-             ref.current.innerHTML = `<div class="text-rose-500 font-mono text-xs">Error rendering chart: ${err.message}</div>`;
+            ref.current.innerHTML = `<div class="text-rose-500 font-mono text-xs">Error rendering chart: ${err.message}</div>`;
           }
         });
     }
@@ -155,7 +155,7 @@ export function ProjectDetailsModal({ project, onClose, isLiked, onToggleLike }:
   return (
     <AnimatePresence>
       {project && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 overflow-y-auto">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -164,11 +164,11 @@ export function ProjectDetailsModal({ project, onClose, isLiked, onToggleLike }:
             onClick={onClose}
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 30 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 30 }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="relative w-full max-w-4xl bg-white/80 dark:bg-obsidian/80 backdrop-blur-2xl border border-slate-200 dark:border-graphite rounded-3xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col max-h-[90vh]"
+            className="relative w-full max-w-4xl m-auto bg-white/80 dark:bg-obsidian/80 backdrop-blur-2xl border border-slate-200 dark:border-graphite rounded-3xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col max-h-[85vh]"
           >
             {/* Modal Header Actions */}
             <div className="absolute top-6 right-6 flex items-center gap-2 z-10">

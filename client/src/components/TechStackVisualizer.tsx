@@ -292,7 +292,7 @@ export function TechStackVisualizer({ project, onClose }: TechStackVisualizerPro
     // Core Project Node
     newNodes.push({
       id: 'project',
-      position: { x: 400, y: 300 },
+      position: { x: 0, y: 0 },
       type: 'default',
       data: {
         label: (
@@ -338,8 +338,8 @@ export function TechStackVisualizer({ project, onClose }: TechStackVisualizerPro
           : `https://cdn.simpleicons.org/${info.slug}/${finalColor}`;
 
         const angle = index * angleStep - Math.PI / 2;
-        const x = 400 + radius * Math.cos(angle);
-        const y = 300 + radius * Math.sin(angle);
+        const x = radius * Math.cos(angle);
+        const y = radius * Math.sin(angle);
         const id = `tech-${index}`;
 
         newNodes.push({
@@ -447,7 +447,7 @@ export function TechStackVisualizer({ project, onClose }: TechStackVisualizerPro
   return (
     <AnimatePresence>
       {project && (
-        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 overflow-y-auto">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -456,10 +456,10 @@ export function TechStackVisualizer({ project, onClose }: TechStackVisualizerPro
             onClick={onClose}
           />
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-7xl h-[90vh] bg-white/80 dark:bg-obsidian/95 backdrop-blur-2xl border border-slate-200 dark:border-graphite rounded-2xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="relative w-full max-w-7xl h-[85vh] m-auto bg-white/80 dark:bg-obsidian/95 backdrop-blur-2xl border border-slate-200 dark:border-graphite rounded-2xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col"
           >
             <div className="p-4 border-b border-slate-200/50 dark:border-graphite/50 flex justify-between items-center bg-white/40 dark:bg-obsidian/40 shrink-0">
               <div>
@@ -482,6 +482,7 @@ export function TechStackVisualizer({ project, onClose }: TechStackVisualizerPro
                   onNodesChange={onNodesChange}
                   onEdgesChange={onEdgesChange}
                   fitView
+                  fitViewOptions={{ padding: 0.15 }}
                   className="theme-aware-flow"
                   proOptions={{ hideAttribution: true }}
                 >

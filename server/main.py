@@ -1,16 +1,44 @@
 import os
-from fastapi import FastAPI, HTTPException, Request, UploadFile, File
+from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from pathlib import Path
 from dotenv import load_dotenv
+env_path = Path(__file__).parent / ".env"
+load_dotenv(dotenv_path=env_path)
 from supabase import create_client, Client
 from upstash_redis import Redis
 from typing import List, Optional
+import json
 
 from pathlib import Path
-load_dotenv(dotenv_path=Path(__file__).parent / ".env")
+import json
+from functools import lru_cache
+try:
+    from pywebpush import webpush, WebPushException
+except ImportError:
+    webpush = None
+    WebPushException = Exception
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+security = HTTPBearer()
 
 app = FastAPI(title="Kryonex API", description="FastAPI Backend for Kryonex Studio")
+
+# Admin Email Configuration
+ADMIN_EMAIL = os.getenv("VITE_ADMIN_EMAIL", "ayushsancheti098@gmail.com").lower()
+
+async def verify_admin(auth: HTTPAuthorizationCredentials = Depends(security)):
+    if not supabase:
+        raise HTTPException(status_code=503, detail="Supabase not connected")
+    
+    try:
+        # Verify the user using the provided JWT
+        user_response = supabase.auth.get_user(auth.credentials)
+        if not user_response.user or user_response.user.email.lower() != ADMIN_EMAIL:
+            raise HTTPException(status_code=403, detail="Unauthorized Administrative Access")
+        return user_response.user
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=f"Invalid Authentication Protocol: {str(e)}")
 
 # CORS configuration
 origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
@@ -57,7 +85,44 @@ if SUPABASE_URL and SUPABASE_KEY:
     except Exception as e:
         print(f"Supabase connection failed: {str(e)}")
 
+# Settings Persistence
+SETTINGS_FILE = Path(__file__).parent / "settings.json"
+
+@lru_cache(maxsize=1)
+def get_persisted_settings():
+    if SETTINGS_FILE.exists():
+        try:
+            with open(SETTINGS_FILE, "r") as f:
+                return json.load(f)
+        except:
+            pass
+    return {"allow_publish": True}
+
+def save_persisted_settings(settings):
+    with open(SETTINGS_FILE, "w") as f:
+        json.dump(settings, f)
+    get_persisted_settings.cache_clear()
+
+# Vault Persistence (Personal Credentials)
+VAULT_FILE = Path(__file__).parent / "vault.json"
+
+def get_persisted_vault():
+    if VAULT_FILE.exists():
+        try:
+            with open(VAULT_FILE, "r") as f:
+                return json.load(f)
+        except:
+            pass
+    return []
+
+def save_persisted_vault(vault_data):
+    with open(VAULT_FILE, "w") as f:
+        json.dump(vault_data, f)
+
 # Models
+class SettingsModel(BaseModel):
+    allow_publish: bool
+
 class ProjectModel(BaseModel):
     id: Optional[str] = None
     title: str
@@ -73,6 +138,10 @@ class ProjectModel(BaseModel):
     githubUrl: Optional[str] = None
     report: Optional[str] = None
     display_order: Optional[int] = 0
+
+class PushSubscriptionModel(BaseModel):
+    endpoint: str
+    keys: dict
 
 @app.get("/")
 async def root():
@@ -99,7 +168,7 @@ async def get_projects():
     return MOCK_PROJECTS
 
 @app.post("/api/projects")
-async def create_project(project: ProjectModel):
+async def create_project(project: ProjectModel, user=Depends(verify_admin)):
     if supabase:
         try:
             data = project.model_dump()
@@ -117,6 +186,13 @@ async def create_project(project: ProjectModel):
                 
             # Cache issue is resolved via v2 table, so we use standard insert
             response = supabase.table("projects_v2").insert(data).execute()
+            
+            # Send Push Notifications
+            try:
+                send_push_notification("New Project!", f"{project.title} by {project.authorName}")
+            except:
+                pass
+
             return response.data[0] if response.data else data
         except Exception as e:
             print(f"INSERT ERROR: {str(e)}")
@@ -129,7 +205,7 @@ async def create_project(project: ProjectModel):
     return project
 
 @app.put("/api/projects/{project_id}")
-async def update_project(project_id: str, project: ProjectModel):
+async def update_project(project_id: str, project: ProjectModel, user=Depends(verify_admin)):
     if supabase:
         try:
             data = project.model_dump()
@@ -153,7 +229,7 @@ async def update_project(project_id: str, project: ProjectModel):
     raise HTTPException(status_code=404, detail="Project not found")
 
 @app.delete("/api/projects/{project_id}")
-async def delete_project(project_id: str):
+async def delete_project(project_id: str, user=Depends(verify_admin)):
     print(f"Deleting project {project_id}...")
     if supabase:
         try:
@@ -170,7 +246,7 @@ async def delete_project(project_id: str):
     return {"status": "success"}
 
 @app.post("/api/projects/reorder")
-async def reorder_projects(order_data: List[dict]):
+async def reorder_projects(order_data: List[dict], user=Depends(verify_admin)):
     """
     Expects a list of {"id": "...", "display_order": ...}
     """
@@ -193,6 +269,7 @@ async def reorder_projects(order_data: List[dict]):
                 p['display_order'] = item.get('display_order')
     return {"status": "success"}
 
+@lru_cache(maxsize=1)
 @app.get("/api/categories")
 async def get_categories():
     if supabase:
@@ -204,8 +281,12 @@ async def get_categories():
             pass
     return DEFAULT_CATEGORIES
 
+# Internal function to clear category cache
+def clear_category_cache():
+    get_categories.cache_clear()
+
 @app.post("/api/categories")
-async def add_category(category: dict):
+async def add_category(category: dict, user=Depends(verify_admin)):
     name = category.get('name')
     if not name:
         raise HTTPException(status_code=400, detail="Name is required")
@@ -213,6 +294,7 @@ async def add_category(category: dict):
     if supabase:
         try:
             supabase.table("categories").insert({"name": name}).execute()
+            get_categories.cache_clear()
             return {"status": "success"}
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
@@ -222,10 +304,11 @@ async def add_category(category: dict):
     return {"status": "success"}
 
 @app.delete("/api/categories/{name}")
-async def delete_category(name: str):
+async def delete_category(name: str, user=Depends(verify_admin)):
     if supabase:
         try:
             supabase.table("categories").delete().eq("name", name).execute()
+            get_categories.cache_clear()
             return {"status": "success"}
         except Exception as e:
             raise HTTPException(status_code=400, detail=str(e))
@@ -233,6 +316,80 @@ async def delete_category(name: str):
     global DEFAULT_CATEGORIES
     DEFAULT_CATEGORIES = [c for c in DEFAULT_CATEGORIES if c != name]
     return {"status": "success"}
+
+@app.get("/api/settings")
+async def get_settings():
+    return get_persisted_settings()
+
+@app.post("/api/settings")
+async def update_settings(settings: SettingsModel, user=Depends(verify_admin)):
+    save_persisted_settings(settings.model_dump())
+    return {"status": "success"}
+
+@app.get("/api/admin/vault")
+async def get_vault(user=Depends(verify_admin)):
+    return get_persisted_vault()
+
+@app.post("/api/admin/vault")
+async def update_vault(vault_data: List[dict], user=Depends(verify_admin)):
+    save_persisted_vault(vault_data)
+    return {"status": "success"}
+
+# Push Subscriptions
+SUBSCRIPTIONS_FILE = Path(__file__).parent / "subscriptions.json"
+
+def get_subscriptions():
+    if SUBSCRIPTIONS_FILE.exists():
+        try:
+            with open(SUBSCRIPTIONS_FILE, "r") as f:
+                return json.load(f)
+        except:
+            pass
+    return []
+
+def save_subscription(sub):
+    subs = get_subscriptions()
+    # Avoid duplicates
+    if not any(s['endpoint'] == sub['endpoint'] for s in subs):
+        subs.append(sub)
+        with open(SUBSCRIPTIONS_FILE, "w") as f:
+            json.dump(subs, f)
+
+@app.post("/api/push/subscribe")
+async def subscribe(sub: PushSubscriptionModel):
+    save_subscription(sub.model_dump())
+    return {"status": "success"}
+
+@app.get("/api/push/vapid-public-key")
+async def get_vapid_key():
+    # Use a fixed key for this environment or let user provide one
+    # If not set, we'll return a placeholder or a generated one
+    return {"public_key": os.getenv("VAPID_PUBLIC_KEY", "BJ7q6N_Zk4R4H_4R_4-Oq-u-Q-o-P-L-L-K-J-I-H-G-F-E-D-C-B-A")} # This is a placeholder
+
+def send_push_notification(title, body):
+    if not webpush:
+        print("pywebpush not installed, skipping push")
+        return
+        
+    subscriptions = get_subscriptions()
+    vapid_private_key = os.getenv("VAPID_PRIVATE_KEY")
+    
+    if not vapid_private_key:
+        print("VAPID_PRIVATE_KEY not set, skipping push")
+        return
+
+    vapid_claims = {"sub": "mailto:admin@kryonex.dev"}
+    
+    for subscription in subscriptions:
+        try:
+            webpush(
+                subscription_info=subscription,
+                data=json.dumps({"title": title, "body": body}),
+                vapid_private_key=vapid_private_key,
+                vapid_claims=vapid_claims
+            )
+        except Exception as ex:
+            print("Web Push Error: ", str(ex))
 
 # Server entry point
 if __name__ == "__main__":

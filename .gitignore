@@ -27,6 +27,11 @@ env/
 .DS_Store
 Thumbs.db
 
+# Sensitive local storage
+server/*.json
+server/vault.json
+server/settings.json
+
 # Logs
 *.log
 npm-debug.log*

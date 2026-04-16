@@ -36,8 +36,8 @@ def main():
         venv_python = os.path.join(venv_dir, "bin", "python")
         
     if not os.path.exists(venv_dir):
-        print("Creating Python virtual environment with uv...")
-        run_command(f"{sys.executable} -m uv venv .venv", server_dir)
+        print("Creating Python virtual environment with uv (using Python 3.11 fallback)...")
+        run_command(f"{sys.executable} -m uv venv --python 3.11 .venv", server_dir)
         
     print("Verifying server (Python) dependencies with uv...")
     # Using uv pip install targeting the .venv
