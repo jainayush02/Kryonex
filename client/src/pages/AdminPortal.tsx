@@ -868,7 +868,7 @@ export default function AdminPortal() {
                         <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-400" size={16} />
                       </div>
                     </div>
-                    <div className="space-y-2 flex items-end sm:col-span-2 lg:col-span-1">
+                    <div className="space-y-2 flex items-end sm:col-span-2 lg:col-span-1 pt-2 sm:pt-0">
                       <Button 
                         onClick={async () => {
                           if (!newVaultItem.name || !newVaultItem.key) return;
@@ -886,11 +886,10 @@ export default function AdminPortal() {
                           setNewVaultItem({ name: '', username: '', key: '', description: '' });
                           toast.success('Key encrypted and stored');
                         }}
-                        size="sm"
-                        variant="ghost"
-                        className="h-10 w-10 text-purple-600 dark:text-purple-400 hover:bg-purple-500/10 border border-purple-500/20 shrink-0"
+                        className="w-full h-10 bg-purple-600 hover:bg-purple-700 text-white dark:bg-purple-600/20 dark:hover:bg-purple-600/30 dark:text-purple-400 font-bold tracking-wider uppercase border border-purple-500/20 transition-all font-anta"
                       >
-                        <Save size={18} />
+                        <Save size={16} className="mr-2" />
+                        Save Item
                       </Button>
                     </div>
                   </div>
@@ -909,11 +908,13 @@ export default function AdminPortal() {
                             <div className="w-9 h-9 rounded-lg bg-purple-100/30 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0">
                               <Key size={18} />
                             </div>
-                            <div className="text-sm font-bold text-graphite dark:text-white uppercase tracking-wider truncate sm:px-1">
-                              {item.name}
-                            </div>
-                            <div className="text-sm font-mono text-purple-500/60 dark:text-purple-400/60 italic truncate hidden sm:block sm:px-1">
-                              {item.username || "—"}
+                            <div className="flex flex-col sm:contents min-w-0">
+                              <div className="text-sm font-bold text-graphite dark:text-white uppercase tracking-wider truncate sm:px-1">
+                                {item.name}
+                              </div>
+                              <div className="text-xs sm:text-sm font-mono text-purple-500/60 dark:text-purple-400/60 italic truncate sm:px-1">
+                                {item.username || "—"}
+                              </div>
                             </div>
                           </div>
 
