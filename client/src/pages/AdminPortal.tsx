@@ -17,7 +17,20 @@ export default function AdminPortal() {
   const [projects, setProjects] = React.useState<Project[]>([]);
   const [categories, setCategories] = React.useState<string[]>([]);
   const [vault, setVault] = React.useState<VaultItem[]>([]);
-  const [activeTab, setActiveTab] = React.useState<'projects' | 'requests' | 'categories' | 'platform' | 'vault'>('projects');
+  const [activeTab, setActiveTabState] = React.useState<'projects' | 'requests' | 'categories' | 'platform' | 'vault'>('projects');
+
+  // Sync activeTab with URL hash to persist across reloads
+  React.useEffect(() => {
+    const hash = window.location.hash.replace('#', '');
+    if (['projects', 'requests', 'categories', 'platform', 'vault'].includes(hash)) {
+      setActiveTabState(hash as any);
+    }
+  }, []);
+
+  const setActiveTab = (tab: typeof activeTab) => {
+    setActiveTabState(tab);
+    window.location.hash = tab;
+  };
   const [isAdding, setIsAdding] = React.useState(false);
   const [githubUrl, setGithubUrl] = React.useState('');
   const [isFetching, setIsFetching] = React.useState(false);
@@ -808,9 +821,9 @@ export default function AdminPortal() {
           )}
 
           {activeTab === 'vault' && (
-            <div className="space-y-8 max-w-5xl">
+            <div className="space-y-8 w-full max-w-5xl">
               <Card className="bg-white/20 dark:bg-obsidian/10 backdrop-blur-2xl border-purple-500/10 dark:border-purple-500/10 shadow-[0_20px_40px_-15px_rgba(147,51,234,0.05)]">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
+                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0 pb-7">
                   <div>
                     <CardTitle className="text-xl font-anta tracking-widest uppercase flex items-center gap-3 text-purple-600 dark:text-purple-400 opacity-80">
                       <ShieldCheck size={24} />
@@ -820,7 +833,7 @@ export default function AdminPortal() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-6 rounded-2xl bg-purple-50/20 dark:bg-purple-900/5 border border-purple-100/20 dark:border-purple-900/20">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 sm:p-6 rounded-2xl bg-purple-50/20 dark:bg-purple-900/5 border border-purple-100/20 dark:border-purple-900/20">
                     <div className="space-y-2">
                       <label className="text-[10px] font-anta uppercase tracking-widest text-purple-600/70 dark:text-purple-400/70">Service Name</label>
                       <Input 
@@ -855,7 +868,7 @@ export default function AdminPortal() {
                         <Key className="absolute left-3 top-1/2 -translate-y-1/2 text-purple-400" size={16} />
                       </div>
                     </div>
-                    <div className="space-y-2 flex items-end">
+                    <div className="space-y-2 flex items-end sm:col-span-2 lg:col-span-1">
                       <Button 
                         onClick={async () => {
                           if (!newVaultItem.name || !newVaultItem.key) return;
@@ -891,21 +904,21 @@ export default function AdminPortal() {
                           <p className="text-sm font-anta text-slate-400 uppercase tracking-wider">Vault is Empty</p>
                         </div>
                       ) : vault.map((item) => (
-                        <div key={item.id} className="group relative grid grid-cols-[40px_160px_280px_1fr_auto] items-center gap-6 p-3.5 rounded-xl bg-white/5 dark:bg-white-[0.01] border border-slate-200/20 dark:border-graphite/10 hover:border-purple-500/20 transition-all duration-300 backdrop-blur-sm w-full">
-                          <div className="w-9 h-9 rounded-lg bg-purple-100/30 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0">
-                            <Key size={18} />
-                          </div>
-                          
-                          <div className="text-sm font-bold text-graphite dark:text-white uppercase tracking-wider truncate px-1">
-                            {item.name}
+                        <div key={item.id} className="group relative flex flex-col sm:grid sm:grid-cols-[40px_160px_minmax(120px,280px)_1fr_auto] items-start sm:items-center gap-3 sm:gap-6 p-4 sm:p-3.5 rounded-xl bg-white/5 dark:bg-white-[0.01] border border-slate-200/20 dark:border-graphite/10 hover:border-purple-500/20 transition-all duration-300 backdrop-blur-sm w-full">
+                          <div className="flex items-center gap-3 w-full sm:w-auto sm:contents">
+                            <div className="w-9 h-9 rounded-lg bg-purple-100/30 dark:bg-purple-900/20 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0">
+                              <Key size={18} />
+                            </div>
+                            <div className="text-sm font-bold text-graphite dark:text-white uppercase tracking-wider truncate sm:px-1">
+                              {item.name}
+                            </div>
+                            <div className="text-sm font-mono text-purple-500/60 dark:text-purple-400/60 italic truncate hidden sm:block sm:px-1">
+                              {item.username || "—"}
+                            </div>
                           </div>
 
-                          <div className="text-sm font-mono text-purple-500/60 dark:text-purple-400/60 italic truncate px-1">
-                            {item.username || "—"}
-                          </div>
-
-                          <div className="flex items-center gap-3 min-w-0 pr-4">
-                            <code className="text-sm font-mono text-slate-400/80 dark:text-slate-500/80 bg-slate-100/30 dark:bg-obsidian/50 px-4 py-1.5 rounded truncate flex-1 shadow-inner border border-slate-200/10 dark:border-graphite/10">
+                          <div className="flex items-center gap-2 sm:gap-3 min-w-0 w-full sm:w-auto sm:pr-4">
+                            <code className="text-xs sm:text-sm font-mono text-slate-400/80 dark:text-slate-500/80 bg-slate-100/30 dark:bg-obsidian/50 px-3 sm:px-4 py-1.5 rounded truncate flex-1 shadow-inner border border-slate-200/10 dark:border-graphite/10 min-w-0 w-full">
                               {visibleKeys.has(item.id) ? item.key : "••••••••••••••••••••••••"}
                             </code>
                             
@@ -933,11 +946,11 @@ export default function AdminPortal() {
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-end min-w-[40px]">
+                          <div className="flex items-center justify-end absolute top-3 right-3 sm:relative sm:top-auto sm:right-auto min-w-[40px]">
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="text-slate-400 hover:text-red-500 hover:bg-red-500/5 opacity-0 group-hover:opacity-100 transition-opacity h-9 w-9 p-0"
+                              className="text-slate-400 hover:text-red-500 hover:bg-red-500/5 transition-colors h-9 w-9 p-0"
                               onClick={async () => {
                                 const newVault = vault.filter(v => v.id !== item.id);
                                 await updateVault(newVault);

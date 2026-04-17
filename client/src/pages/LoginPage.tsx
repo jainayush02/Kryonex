@@ -321,7 +321,6 @@ export default function LoginPage() {
 
       {/* Right Side: Login Form with Invisible Creative Scroll */}
       <motion.div 
-        layout
         className="flex-1 flex flex-col items-center justify-start py-12 px-6 lg:px-12 relative z-10 h-full overflow-y-auto scrollbar-none selection:bg-blue-500/30"
         style={{
           msOverflowStyle: 'none',
@@ -335,17 +334,15 @@ export default function LoginPage() {
         </div>
 
         <motion.div
-          layout
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
           className="w-full max-w-md relative z-10"
         >
-          <motion.div layout className="relative group">
+          <motion.div className="relative group">
             <Card className="border-black/[0.03] dark:border-white/10 bg-white/100 dark:bg-obsidian/80 backdrop-blur-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-2xl overflow-hidden rounded-[2rem]">
-              <motion.div layout className="flex flex-col items-center pt-10 pb-4">
+              <motion.div className="flex flex-col items-center pt-10 pb-4">
                  <motion.div
-                    layout
                     className="w-64 h-20 bg-[#1e293b] dark:bg-white"
                     style={{
                       maskImage: `url(${logo})`,
@@ -359,7 +356,6 @@ export default function LoginPage() {
                     }}
                   />
                   <motion.p 
-                    layout
                     className="text-[10px] tracking-[0.4em] text-slate-400 dark:text-slate-500 uppercase font-medium -mt-2"
                   >
                     By <span className="text-[#1e293b] dark:text-white">Ayush Jain</span>
@@ -490,7 +486,7 @@ export default function LoginPage() {
                     )}
                   </AnimatePresence>
 
-                  <motion.div layout>
+                  <motion.div>
                     <Button type="submit" disabled={isLoading} 
                       className="w-full h-12 bg-[#1e293b] dark:bg-white hover:bg-[#2d3a4f] dark:hover:bg-slate-200 text-white dark:text-black font-anta font-bold tracking-[0.2em] uppercase transition-all duration-300 rounded-xl mt-4 shadow-lg">
                       {isLoading ? <RefreshCw className="w-5 h-5 animate-spin" /> : (showOtpInput ? 'VERIFY CODE' : (isSignUp ? 'INITIALIZE CODE' : 'INITIALIZE SESSION'))}

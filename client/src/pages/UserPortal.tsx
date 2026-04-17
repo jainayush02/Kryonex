@@ -34,6 +34,17 @@ export default function UserPortal() {
   const [siteSettings, setSiteSettings] = React.useState<SiteSettings>({ allow_publish: false });
   const navigate = useNavigate();
 
+  // Memoize random equalizer values so they don't change on every render (prevents mobile refresh loop)
+  const equalizerBars = React.useMemo(() => 
+    Array.from({ length: 32 }, () => {
+      const height = 15 + Math.random() * 85;
+      return {
+        height,
+        midHeight: height * (0.3 + Math.random() * 0.7),
+        duration: 1.5 + Math.random() * 2,
+      };
+    }), []);
+
   React.useEffect(() => {
     if (isMenuOpen) {
       document.body.style.overflow = 'hidden';
@@ -497,14 +508,12 @@ export default function UserPortal() {
 
               {/* Animated Equalizer Graph */}
               <div className="flex items-end gap-[2px] h-8 w-full relative z-10">
-                {[...Array(32)].map((_, i) => {
-                  const height = 15 + Math.random() * 85;
-                  return (
+                {equalizerBars.map((bar, i) => (
                     <motion.div
                       key={i}
                       initial={{ height: '10%' }}
-                      animate={{ height: [`${height}%`, `${height * (0.3 + Math.random() * 0.7)}%`, `${height}%`] }}
-                      transition={{ duration: 1.5 + Math.random() * 2, repeat: Infinity, ease: 'linear' }}
+                      animate={{ height: [`${bar.height}%`, `${bar.midHeight}%`, `${bar.height}%`] }}
+                      transition={{ duration: bar.duration, repeat: Infinity, ease: 'linear' }}
                       className="flex-1 bg-graphite dark:bg-white rounded-[1px] opacity-20 dark:opacity-30"
                       style={{
                         animationDelay: `${i * 0.05}s`
@@ -515,8 +524,7 @@ export default function UserPortal() {
                         style={{ height: '2px', marginTop: '-4px' }}
                       />
                     </motion.div>
-                  )
-                })}
+                  ))}
               </div>
             </div>
           </motion.div>

@@ -25,6 +25,7 @@ export default function App() {
     : '/api';
 
   const subscribeToPush = async () => {
+    if (!('serviceWorker' in navigator)) return;
     try {
       const registration = await navigator.serviceWorker.ready;
       
@@ -85,8 +86,10 @@ export default function App() {
       document.documentElement.classList.remove('dark');
     }
 
-    // Register Push SW
-    navigator.serviceWorker.register('/push-sw.js').catch(err => console.error('Push SW registration failed', err));
+    // Register Push SW (only if serviceWorker is available)
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/push-sw.js').catch(err => console.error('Push SW registration failed', err));
+    }
 
     const handleOnline = () => setIsOffline(false);
     const handleOffline = () => setIsOffline(true);
