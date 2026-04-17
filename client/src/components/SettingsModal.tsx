@@ -10,11 +10,17 @@ interface SettingsModalProps {
 }
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(window.deferredPrompt || null);
 
   useEffect(() => {
+    // Catch it if it was assigned on window right before mount
+    if (window.deferredPrompt && !deferredPrompt) {
+      setDeferredPrompt(window.deferredPrompt);
+    }
+
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
+      window.deferredPrompt = e;
       setDeferredPrompt(e);
     };
 

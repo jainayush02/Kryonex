@@ -310,6 +310,8 @@ export default function LoginPage() {
 
   return (
     <div className="h-screen flex flex-col lg:flex-row bg-[#fbfbfb] dark:bg-obsidian transition-colors duration-500 relative overflow-hidden font-anta">
+      {/* Hidden container for standard Google button to fallback to after One Tap cancellation */}
+      <div id="google-signin-btn-hidden" className="hidden"></div>
       {/* Dynamic Background Glows */}
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-blue-500/10 dark:bg-blue-500/5 blur-[120px] pointer-events-none animate-pulse-slow" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-500/10 dark:bg-purple-500/5 blur-[120px] pointer-events-none animate-pulse-slow" style={{ animationDelay: '2s' }} />

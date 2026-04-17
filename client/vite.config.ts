@@ -14,6 +14,7 @@ export default defineConfig(({mode}) => {
         registerType: 'prompt',
         injectRegister: 'auto',
         workbox: {
+          cleanupOutdatedCaches: true,
           navigateFallback: 'index.html',
           navigateFallbackDenylist: [/^\/api/],
           runtimeCaching: [

@@ -57,6 +57,11 @@ export default function App() {
   } = useRegisterSW({
     onRegistered(r) {
       console.log('SW Registered: ', r);
+      if (r) {
+        setInterval(() => {
+          r.update();
+        }, 60 * 60 * 1000); // 1 hour
+      }
     },
     onRegisterError(error) {
       console.log('SW registration error', error);
@@ -66,16 +71,21 @@ export default function App() {
   useEffect(() => {
     if (needRefresh) {
       toast('Update Available', {
+        id: 'pwa-update',
         description: 'A new version of Kryonex is ready. Refresh to see the latest changes.',
         action: {
           label: 'Update Now',
-          onClick: () => updateServiceWorker(true),
+          onClick: () => {
+            setNeedRefresh(false);
+            updateServiceWorker(true);
+          },
         },
+        onDismiss: () => setNeedRefresh(false),
         duration: Infinity,
         icon: <RefreshCw className="animate-spin text-graphite dark:text-white" size={16} />,
       });
     }
-  }, [needRefresh, updateServiceWorker]);
+  }, [needRefresh, updateServiceWorker, setNeedRefresh]);
 
   useEffect(() => {
     // Theme initialization
@@ -101,6 +111,7 @@ export default function App() {
     if ('Notification' in window && Notification.permission === 'default') {
       setTimeout(() => {
         toast('Stay Updated', {
+          id: 'push-notify',
           description: 'Enable push notifications for Kryonex updates and alerts.',
           action: {
             label: 'Enable',
