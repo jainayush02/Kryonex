@@ -917,49 +917,51 @@ export default function AdminPortal() {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2 sm:gap-3 min-w-0 w-full sm:w-auto sm:pr-4">
-                            <code className="text-xs sm:text-sm font-mono text-slate-400/80 dark:text-slate-500/80 bg-slate-100/30 dark:bg-obsidian/50 px-3 sm:px-4 py-1.5 rounded truncate flex-1 shadow-inner border border-slate-200/10 dark:border-graphite/10 min-w-0 w-full">
-                              {visibleKeys.has(item.id) ? item.key : "••••••••••••••••••••••••"}
-                            </code>
-                            
-                            <div className="flex items-center gap-1.5 shrink-0 ml-1">
-                              <button 
-                                onClick={() => {
-                                  const next = new Set(visibleKeys);
-                                  if (next.has(item.id)) next.delete(item.id);
-                                  else next.add(item.id);
-                                  setVisibleKeys(next);
-                                }}
-                                className="text-slate-400 hover:text-purple-500 transition-colors p-1.5 hover:bg-purple-500/5 rounded-md"
-                              >
-                                {visibleKeys.has(item.id) ? <EyeOff size={16} /> : <Eye size={16} />}
-                              </button>
-                              <button 
-                                onClick={() => {
-                                  navigator.clipboard.writeText(item.key);
-                                  toast.success('Key copied');
-                                }}
-                                className="text-slate-400 hover:text-purple-500 transition-colors p-1.5 hover:bg-purple-500/5 rounded-md"
-                              >
-                                <Copy size={16} />
-                              </button>
+                          <div className="flex items-center gap-2 w-full sm:w-auto sm:contents">
+                            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1 sm:pr-4">
+                              <code className="text-xs sm:text-sm font-mono text-slate-400/80 dark:text-slate-500/80 bg-slate-100/30 dark:bg-obsidian/50 px-3 sm:px-4 py-1.5 rounded truncate flex-1 shadow-inner border border-slate-200/10 dark:border-graphite/10 min-w-0 w-full">
+                                {visibleKeys.has(item.id) ? item.key : "••••••••••••••••••••••••"}
+                              </code>
+                              
+                              <div className="flex items-center gap-1 shrink-0 ml-1">
+                                <button 
+                                  onClick={() => {
+                                    const next = new Set(visibleKeys);
+                                    if (next.has(item.id)) next.delete(item.id);
+                                    else next.add(item.id);
+                                    setVisibleKeys(next);
+                                  }}
+                                  className="text-slate-400 hover:text-purple-500 transition-colors p-1.5 hover:bg-purple-500/5 rounded-md flex-shrink-0"
+                                >
+                                  {visibleKeys.has(item.id) ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
+                                <button 
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(item.key);
+                                    toast.success('Key copied');
+                                  }}
+                                  className="text-slate-400 hover:text-purple-500 transition-colors p-1.5 hover:bg-purple-500/5 rounded-md flex-shrink-0"
+                                >
+                                  <Copy size={16} />
+                                </button>
+                              </div>
                             </div>
-                          </div>
-
-                          <div className="flex items-center justify-end absolute top-3 right-3 sm:relative sm:top-auto sm:right-auto min-w-[40px]">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
-                              className="text-slate-400 hover:text-red-500 hover:bg-red-500/5 transition-colors h-9 w-9 p-0"
-                              onClick={async () => {
-                                const newVault = vault.filter(v => v.id !== item.id);
-                                await updateVault(newVault);
-                                setVault(newVault);
-                                toast.info('Credential purged');
-                              }}
-                            >
-                              <Trash2 size={18} />
-                            </Button>
+  
+                            <div className="flex items-center justify-end shrink-0 sm:min-w-[40px]">
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-slate-400 hover:text-red-500 hover:bg-red-500/5 transition-colors h-9 w-9 p-0 flex-shrink-0"
+                                onClick={async () => {
+                                  const newVault = vault.filter(v => v.id !== item.id);
+                                  await updateVault(newVault);
+                                  setVault(newVault);
+                                  toast.info('Credential purged');
+                                }}
+                              >
+                                <Trash2 size={18} />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       ))}
