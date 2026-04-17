@@ -96,10 +96,7 @@ export default function App() {
       document.documentElement.classList.remove('dark');
     }
 
-    // Register Push SW (only if serviceWorker is available)
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/push-sw.js').catch(err => console.error('Push SW registration failed', err));
-    }
+    // Push SW is now integrated via workbox importScripts in vite.config.ts
 
     const handleOnline = () => setIsOffline(false);
     const handleOffline = () => setIsOffline(true);

@@ -14,6 +14,7 @@ export default defineConfig(({mode}) => {
         registerType: 'prompt',
         injectRegister: 'auto',
         workbox: {
+          importScripts: ['push-sw.js'],
           cleanupOutdatedCaches: true,
           navigateFallback: 'index.html',
           navigateFallbackDenylist: [/^\/api/],
