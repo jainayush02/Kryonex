@@ -155,9 +155,11 @@ export default function App() {
     const ssoToken = urlParams.get('sso_token');
     if (ssoToken) {
       localStorage.setItem('sso_token', ssoToken);
-      // Remove token from URL and force redirect to portal
+      // Remove token from URL and force redirect to portal if not already there
       window.history.replaceState({}, document.title, window.location.pathname);
-      window.location.href = '/portal';
+      if (window.location.pathname !== '/portal') {
+        window.location.href = '/portal';
+      }
     }
 
     return () => {

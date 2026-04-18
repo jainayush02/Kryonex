@@ -30,8 +30,9 @@ export default function UserPortal() {
   const [syncingProjects, setSyncingProjects] = React.useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = React.useState(true);
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
-  const [isAdmin, setIsAdmin] = React.useState(false);
   const [siteSettings, setSiteSettings] = React.useState<SiteSettings>({ allow_publish: false });
+  const [isAdmin, setIsAdmin] = React.useState(false);
+  const [isGuest, setIsGuest] = React.useState(false);
   const navigate = useNavigate();
 
   // Memoize random equalizer values so they don't change on every render (prevents mobile refresh loop)
@@ -184,8 +185,13 @@ export default function UserPortal() {
         setCategories(categoriesData);
         setSiteSettings(settingsData);
 
+        const currentSsoToken = localStorage.getItem('sso_token');
+        if (currentSsoToken) {
+          setIsGuest(true);
+        }
+
         const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'ayushsancheti098@gmail.com';
-        if (session?.user?.email && session.user.email.toLowerCase() === adminEmail.toLowerCase()) {
+        if (session?.user?.email && session.user.email.toLowerCase() === adminEmail.toLowerCase() && !currentSsoToken) {
           setIsAdmin(true);
         }
       } finally {
@@ -342,14 +348,16 @@ export default function UserPortal() {
                     <span className="font-anta tracking-wider">Add Project</span>
                   </Button>
                 )}
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start gap-4 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10"
-                  onClick={() => { setIsSettingsOpen(true); setIsMenuOpen(false); }}
-                >
-                  <Settings size={20} />
-                  <span className="font-anta tracking-wider">Settings</span>
-                </Button>
+                {!isGuest && (
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start gap-4 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10"
+                    onClick={() => { setIsSettingsOpen(true); setIsMenuOpen(false); }}
+                  >
+                    <Settings size={20} />
+                    <span className="font-anta tracking-wider">Settings</span>
+                  </Button>
+                )}
                 {isAdmin && (
                   <Button
                     variant="ghost"
@@ -365,14 +373,19 @@ export default function UserPortal() {
               <div className="p-6 border-t border-slate-200/50 dark:border-graphite/50 space-y-6 flex-shrink-0 bg-white/50 dark:bg-obsidian/50 backdrop-blur-md">
                 <Button
                   variant="ghost"
-                  className="w-full justify-start gap-4 text-red-500 hover:bg-red-50/50 dark:hover:bg-red-500/10"
+                  className={`w-full justify-start gap-4 ${isGuest ? 'text-graphite dark:text-white' : 'text-red-500 hover:bg-red-50/50 dark:hover:bg-red-500/10'}`}
                   onClick={async () => {
-                    await supabase.auth.signOut();
-                    navigate('/');
+                    if (isGuest) {
+                      localStorage.removeItem('sso_token');
+                      window.location.href = 'https://www.sentinell.dev';
+                    } else {
+                      await supabase.auth.signOut();
+                      navigate('/');
+                    }
                   }}
                 >
                   <LogOut size={20} />
-                  <span className="font-anta tracking-wider">Logout</span>
+                  <span className="font-anta tracking-wider">{isGuest ? 'Exit Viewer' : 'Logout'}</span>
                 </Button>
 
                 <div className="pt-4 border-t border-slate-100 dark:border-white/5">
@@ -411,18 +424,33 @@ export default function UserPortal() {
               <Plus size={16} /> Publish Project
             </Button>
           )}
-          <Button variant="ghost" size="sm" onClick={() => setIsSettingsOpen(true)} className="text-slate-500 hover:text-graphite dark:hover:text-white">
-            <Settings size={20} />
-          </Button>
+          {!isGuest && (
+            <Button variant="ghost" size="sm" onClick={() => setIsSettingsOpen(true)} className="text-slate-500 hover:text-graphite dark:hover:text-white">
+              <Settings size={20} />
+            </Button>
+          )}
           {isAdmin && (
             <Button variant="ghost" size="sm" onClick={() => navigate('/admin')} className="text-slate-500 hover:text-graphite dark:hover:text-white">
               <LayoutDashboard size={18} className="mr-2" />
               Admin Mode
             </Button>
           )}
-          <Button variant="ghost" size="sm" onClick={async () => { await supabase.auth.signOut(); navigate('/'); }} className="text-slate-500 hover:text-graphite dark:hover:text-white">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={async () => {
+              if (isGuest) {
+                localStorage.removeItem('sso_token');
+                window.location.href = 'https://www.sentinell.dev';
+              } else {
+                await supabase.auth.signOut();
+                navigate('/');
+              }
+            }} 
+            className="text-slate-500 hover:text-graphite dark:hover:text-white"
+          >
             <LogOut size={18} className="mr-2" />
-            Logout
+            {isGuest ? 'Exit Viewer' : 'Logout'}
           </Button>
         </div>
       </nav>

@@ -17,7 +17,9 @@ const getAuthHeaders = async () => {
 
 export const getProjects = async (): Promise<Project[]> => {
   try {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${API_URL}/projects?t=${Date.now()}`, {
+      headers,
       cache: 'no-store',
     });
     if (!response.ok) throw new Error('Failed to fetch projects');
@@ -56,9 +58,10 @@ export const createProject = async (project: Project): Promise<Project> => {
 
 export const updateProject = async (project: Project): Promise<Project> => {
   try {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${API_URL}/projects/${project.id}`, {
       method: 'PUT',
-      headers: await getAuthHeaders(),
+      headers,
       body: JSON.stringify(project),
     });
     if (!response.ok) throw new Error('Failed to update project');
@@ -105,7 +108,8 @@ export const saveProjects = async (projects: Project[]) => {
 
 export const getCategories = async (): Promise<string[]> => {
   try {
-    const response = await fetch(`${API_URL}/categories`);
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${API_URL}/categories`, { headers });
     if (!response.ok) throw new Error('Failed to fetch categories');
     return await response.json();
   } catch (error) {
@@ -162,7 +166,8 @@ export interface VaultItem {
 
 export const getSettings = async (): Promise<SiteSettings> => {
   try {
-    const response = await fetch(`${API_URL}/settings`);
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${API_URL}/settings`, { headers });
     if (!response.ok) throw new Error('Failed to fetch settings');
     return await response.json();
   } catch (error) {
