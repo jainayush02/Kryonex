@@ -4,7 +4,9 @@
     {
       "src": "package.json",
       "use": "@vercel/static-build",
-      "config": { "distDir": "client/dist" }
+      "config": {
+        "distDir": "client/dist"
+      }
     },
     {
       "src": "server/main.py",
@@ -17,9 +19,12 @@
       "destination": "server/main.py"
     },
     {
+      "source": "/portal(.*)",
+      "destination": "/index.html"
+    },
+    {
       "source": "/(.*)",
       "destination": "/$1"
     }
   ]
 }
-
