@@ -16,12 +16,18 @@ export function AuthGuard({ children, requireAdmin = false }: AuthGuardProps) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const currentSsoToken = localStorage.getItem('sso_token');
+    const checkAuth = async () => {
+      const currentSsoToken = localStorage.getItem('sso_token');
 
-    // Check initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      // If we have an SSO token but no supabase session, we bypass for /portal
-      if (!session && currentSsoToken) {
+      // 1. Instant Guest Authorization
+      if (currentSsoToken) {
+        // SECURITY: If at an admin route, guests are NOT allowed. Redirect to portal.
+        if (requireAdmin) {
+          navigate('/portal');
+          setLoading(false);
+          return;
+        }
+
         setSession({
           access_token: currentSsoToken,
           token_type: 'bearer',
@@ -38,29 +44,50 @@ export function AuthGuard({ children, requireAdmin = false }: AuthGuardProps) {
           }
         } as any);
         setLoading(false);
-        return;
       }
 
-      setSession(session);
-      setLoading(false);
+      // 2. Official Session Check (Regular Google SSO / Supabase)
+      const { data: { session: supabaseSession } } = await supabase.auth.getSession();
       
-      if (!session) {
-        navigate('/');
-        return;
-      }
+      if (supabaseSession) {
+        // SECURITY: Once a real user logs in, we should clear the guest token to prevent conflicts
+        if (currentSsoToken) {
+          localStorage.removeItem('sso_token');
+        }
 
-      if (requireAdmin && session.user.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
-        navigate('/portal');
+        setSession(supabaseSession);
+        setLoading(false);
+        
+        // Admin protection check
+        if (requireAdmin && supabaseSession.user.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+          navigate('/portal');
+        }
+      } else if (!currentSsoToken) {
+        // No guest token and no login = back to login page
+        setLoading(false);
+        navigate('/');
       }
-    });
+    };
+
+    checkAuth();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setSession(session);
-      if (!session && event !== 'INITIAL_SESSION') {
-        navigate('/');
-      } else if (requireAdmin && session?.user.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
-        navigate('/portal');
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, supabaseSession) => {
+      if (supabaseSession) {
+        setSession(supabaseSession);
+        // Clear guest token if we just logged in for real
+        localStorage.removeItem('sso_token');
+        
+        if (requireAdmin && supabaseSession.user.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
+          navigate('/portal');
+        }
+      } else {
+        // If no supabase session, check if we're a guest
+        const ssoToken = localStorage.getItem('sso_token');
+        if (!ssoToken && event !== 'INITIAL_SESSION') {
+          setSession(null);
+          navigate('/');
+        }
       }
     });
 
