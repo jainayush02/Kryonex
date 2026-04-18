@@ -185,7 +185,6 @@ export default function App() {
 
   return (
     <Router>
-      <ScrollProgress />
       <Toaster position="bottom-center" theme="system" />
       <Routes>
         <Route path="/" element={<LoginPage />} />

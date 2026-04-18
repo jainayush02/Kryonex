@@ -201,8 +201,10 @@ export function ProjectDetailsModal({ project, onClose, isLiked, onToggleLike }:
                   ))}
                 </div>
                 <h2 className="text-3xl sm:text-5xl font-bold text-graphite dark:text-white mb-2 tracking-tight">{project.title}</h2>
-                {project.shortDescription && (
-                  <p className="text-lg text-slate-500 dark:text-slate-400 font-medium mb-3 leading-tight">{project.shortDescription}</p>
+                {(project.shortDescription || project.features?.find(f => f.startsWith('SD:'))?.substring(3)) && (
+                  <p className="text-lg text-slate-500 dark:text-slate-400 font-medium mb-3 leading-tight">
+                    {project.shortDescription || project.features?.find(f => f.startsWith('SD:'))?.substring(3)}
+                  </p>
                 )}
                 <p className="text-xs text-slate-400 font-mono mt-1">by {project.authorName}</p>
               </div>

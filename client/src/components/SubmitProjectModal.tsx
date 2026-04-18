@@ -127,6 +127,9 @@ export function SubmitProjectModal({ isOpen, onClose }: SubmitProjectModalProps)
     if (form.githubUrl) {
       rawFeatures.push(`GH:${form.githubUrl}`);
     }
+    if (form.shortDescription) {
+      rawFeatures.push(`SD:${form.shortDescription}`);
+    }
 
     const project: Project = {
       id: generateUUID(),

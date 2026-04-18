@@ -33,10 +33,12 @@ export default function UserPortal() {
   const [siteSettings, setSiteSettings] = React.useState<SiteSettings>({ allow_publish: false });
   const [isAdmin, setIsAdmin] = React.useState(false);
   const [isGuest, setIsGuest] = React.useState(false);
+  const [expandedProjects, setExpandedProjects] = React.useState<Set<string>>(new Set());
+  const [expandedTech, setExpandedTech] = React.useState<Set<string>>(new Set());
   const navigate = useNavigate();
 
   // Memoize random equalizer values so they don't change on every render (prevents mobile refresh loop)
-  const equalizerBars = React.useMemo(() => 
+  const equalizerBars = React.useMemo(() =>
     Array.from({ length: 32 }, () => {
       const height = 15 + Math.random() * 85;
       return {
@@ -96,6 +98,26 @@ export default function UserPortal() {
       setLikedProjects(new Set(JSON.parse(savedLikes)));
     }
   }, []);
+
+  const toggleExpand = (e: React.MouseEvent, projectId: string) => {
+    e.stopPropagation();
+    setExpandedProjects(prev => {
+      const next = new Set(prev);
+      if (next.has(projectId)) next.delete(projectId);
+      else next.add(projectId);
+      return next;
+    });
+  };
+
+  const toggleTechExpand = (e: React.MouseEvent, projectId: string) => {
+    e.stopPropagation();
+    setExpandedTech(prev => {
+      const next = new Set(prev);
+      if (next.has(projectId)) next.delete(projectId);
+      else next.add(projectId);
+      return next;
+    });
+  };
 
   const toggleLike = (e: React.MouseEvent, projectId: string) => {
     e.stopPropagation();
@@ -277,14 +299,9 @@ export default function UserPortal() {
   });
 
   return (
-    <motion.div
-      initial={{ opacity: 0, filter: 'blur(5px)' }}
-      animate={{ opacity: 1, filter: 'blur(0px)' }}
-      transition={{ duration: 0.4, ease: 'easeOut' }}
-      className="min-h-screen bg-pearl dark:bg-obsidian text-slate-700 dark:text-slate-300 transition-colors duration-300 relative overflow-hidden"
-    >
+    <div className="min-h-screen bg-pearl dark:bg-obsidian text-slate-700 dark:text-slate-300 transition-colors duration-300 relative">
       {/* Mobile Top Header */}
-      <nav className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-obsidian/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-graphite/50 px-6 py-4 flex items-center justify-between transition-all duration-300">
+      <nav className="md:hidden fixed top-0 left-0 right-0 z-[100] bg-white/80 dark:bg-obsidian/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-graphite/50 px-6 py-4 flex items-center justify-between transition-all duration-300">
         <div className="w-8 h-8 opacity-0">{/* Placeholder for balance */}</div>
         <div className="w-32 h-8 flex items-center justify-center overflow-hidden">
           <div
@@ -400,7 +417,7 @@ export default function UserPortal() {
       </AnimatePresence>
 
       {/* Navigation (Desktop/Tablet) */}
-      <nav className="hidden md:flex fixed top-0 left-0 right-0 z-50 bg-white dark:bg-obsidian border-b border-slate-200/50 dark:border-graphite/50 px-6 py-1 items-center justify-between shadow-sm transition-all duration-300">
+      <nav className="hidden md:flex fixed top-0 left-0 right-0 z-[100] bg-white/80 dark:bg-obsidian/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-graphite/50 px-6 py-1 items-center justify-between shadow-[0_1px_2px_rgba(0,0,0,0.05)] transition-all duration-300">
         <div className="flex items-center gap-2">
           <div className="w-40 h-16 flex items-center justify-center overflow-hidden">
             <div
@@ -435,9 +452,9 @@ export default function UserPortal() {
               Admin Mode
             </Button>
           )}
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={async () => {
               if (isGuest) {
                 localStorage.removeItem('sso_token');
@@ -446,7 +463,7 @@ export default function UserPortal() {
                 await supabase.auth.signOut();
                 navigate('/');
               }
-            }} 
+            }}
             className="text-slate-500 hover:text-graphite dark:hover:text-white"
           >
             <LogOut size={18} className="mr-2" />
@@ -455,10 +472,15 @@ export default function UserPortal() {
         </div>
       </nav>
 
-      {/* Main Content */}
-      <main className="max-w-[1800px] mx-auto px-6 pt-24 md:pt-40 py-12 md:py-16 pb-12">
-        {/* Header */}
-        <header className="mb-10 md:mb-14 flex flex-col md:flex-row md:items-center justify-between gap-8">
+      <motion.div
+        initial={{ opacity: 0, filter: 'blur(5px)' }}
+        animate={{ opacity: 1, filter: 'blur(0px)' }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+      >
+        {/* Main Content */}
+        <main className="max-w-[1800px] mx-auto px-6 pt-24 md:pt-40 py-12 md:py-16 pb-12">
+          {/* Header */}
+          <header className="mb-10 md:mb-14 flex flex-col md:flex-row md:items-center justify-between gap-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -537,22 +559,22 @@ export default function UserPortal() {
               {/* Animated Equalizer Graph */}
               <div className="flex items-end gap-[2px] h-8 w-full relative z-10">
                 {equalizerBars.map((bar, i) => (
-                    <motion.div
-                      key={i}
-                      initial={{ height: '10%' }}
-                      animate={{ height: [`${bar.height}%`, `${bar.midHeight}%`, `${bar.height}%`] }}
-                      transition={{ duration: bar.duration, repeat: Infinity, ease: 'linear' }}
-                      className="flex-1 bg-graphite dark:bg-white rounded-[1px] opacity-20 dark:opacity-30"
-                      style={{
-                        animationDelay: `${i * 0.05}s`
-                      }}
-                    >
-                      <div
-                        className="w-full bg-graphite dark:bg-white opacity-100 rounded-[1px]"
-                        style={{ height: '2px', marginTop: '-4px' }}
-                      />
-                    </motion.div>
-                  ))}
+                  <motion.div
+                    key={i}
+                    initial={{ height: '10%' }}
+                    animate={{ height: [`${bar.height}%`, `${bar.midHeight}%`, `${bar.height}%`] }}
+                    transition={{ duration: bar.duration, repeat: Infinity, ease: 'linear' }}
+                    className="flex-1 bg-graphite dark:bg-white rounded-[1px] opacity-20 dark:opacity-30"
+                    style={{
+                      animationDelay: `${i * 0.05}s`
+                    }}
+                  >
+                    <div
+                      className="w-full bg-graphite dark:bg-white opacity-100 rounded-[1px]"
+                      style={{ height: '2px', marginTop: '-4px' }}
+                    />
+                  </motion.div>
+                ))}
               </div>
             </div>
           </motion.div>
@@ -724,8 +746,9 @@ export default function UserPortal() {
                         {project.title}
                       </CardTitle>
                       <div className="text-xs text-slate-500 mt-1 font-medium">by {project.authorName}</div>
-                      <CardDescription className="mt-2 text-xs sm:text-sm min-h-[60px] line-clamp-3">
+                      <CardDescription className={`mt-2 text-xs sm:text-sm min-h-[60px] ${expandedProjects.has(project.id) ? '' : 'line-clamp-3'} transition-all duration-300`}>
                         {project.shortDescription ||
+                          project.features?.find(f => f.startsWith('SD:'))?.substring(3) ||
                           project.description
                             .replace(/[#*`>]/g, '') // Strip common markdown symbols
                             .replace(/\n/g, ' ')    // Flatten newlines
@@ -734,26 +757,39 @@ export default function UserPortal() {
                         }
                       </CardDescription>
 
+                      {(project.shortDescription || project.features?.find(f => f.startsWith('SD:'))?.substring(3) || project.description)?.length > 100 && (
+                        <button
+                          onClick={(e) => toggleExpand(e, project.id)}
+                          className="text-[10px] font-bold text-graphite/60 dark:text-slate-500 hover:text-graphite dark:hover:text-white mt-1 transition-colors flex items-center gap-1 group/more"
+                        >
+                          {expandedProjects.has(project.id) ? 'Show Less' : (
+                            <>
+                              Read Full Description <ArrowRight size={10} className="group-hover/more:translate-x-0.5 transition-transform" />
+                            </>
+                          )}
+                        </button>
+                      )}
+
                       {/* Tech DNA Section */}
                       {project.techStack && (
                         <div className="mt-4 pt-4 border-t border-slate-200/50 dark:border-graphite/50">
                           <div className="flex items-center justify-between mb-2">
                             <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400 uppercase">Tech DNA</span>
-                            {project.performance && (
-                              <div className="flex items-center gap-1">
-                                <div className="w-12 h-2 bg-slate-100 dark:bg-obsidian rounded-full overflow-hidden">
-                                  <div className="h-full bg-graphite dark:bg-white" style={{ width: `${project.performance}%` }} />
-                                </div>
-                                <span className="text-[10px] font-mono text-graphite dark:text-white">{project.performance}%</span>
-                              </div>
-                            )}
                           </div>
-                          <div className="flex flex-wrap gap-1.5 mt-2">
-                            {project.techStack?.map(tech => (
+                          <div className="flex flex-wrap gap-1.5 mt-2 transition-all duration-300">
+                            {project.techStack?.slice(0, expandedTech.has(project.id) ? undefined : 5).map(tech => (
                               <span key={tech} className="text-[9px] px-1.5 py-0.5 bg-white/40 dark:bg-white/5 border border-slate-200/50 dark:border-graphite rounded text-slate-500 dark:text-slate-400">
                                 {tech}
                               </span>
                             ))}
+                            {project.techStack && project.techStack.length > 5 && (
+                              <button
+                                onClick={(e) => toggleTechExpand(e, project.id)}
+                                className="ml-auto text-[9px] px-1.5 py-0.5 bg-graphite/5 dark:bg-white/10 hover:bg-graphite/10 dark:hover:bg-white/20 border border-slate-200/50 dark:border-graphite rounded text-graphite dark:text-white font-bold transition-all"
+                              >
+                                {expandedTech.has(project.id) ? 'Show Less' : `+${project.techStack.length - 5} more`}
+                              </button>
+                            )}
                           </div>
                         </div>
                       )}
@@ -787,9 +823,9 @@ export default function UserPortal() {
                         </Button>
 
                         <Button
-                          variant="secondary"
+                          variant="ghost"
                           size="sm"
-                          className="px-0 h-9 hover:bg-slate-200 dark:hover:bg-white/20 transition-all font-bold"
+                          className="px-0 h-9 border border-slate-200/50 dark:border-graphite/50 hover:bg-white/50 dark:hover:bg-white/10"
                           onClick={(e) => {
                             e.stopPropagation();
                             setDetailsProject(project);
@@ -920,6 +956,7 @@ export default function UserPortal() {
           });
         }}
       />
-    </motion.div>
+      </motion.div>
+    </div>
   );
 }

@@ -200,7 +200,7 @@ async def create_project(project: ProjectModel, user=Depends(verify_admin)):
         try:
             data = project.model_dump()
             # Remove fields that don't exist in Supabase projects_v2 table
-            for field in ['imageUrl', 'githubUrl', 'report', 'shortDescription']:
+            for field in ['imageUrl', 'githubUrl', 'report']:
                 data.pop(field, None)
                 
             if not data.get('id'):
@@ -224,7 +224,7 @@ async def create_project(project: ProjectModel, user=Depends(verify_admin)):
         except Exception as e:
             print(f"INSERT ERROR: {str(e)}")
             # If even the explicit select fails, it's likely a column name typo, so we return the raw data as a last resort
-            if "imageUrl" in str(e):
+            if "imageUrl" in str(e) or "shortDescription" in str(e):
                 return data
             raise HTTPException(status_code=400, detail=str(e))
     
@@ -240,7 +240,7 @@ async def update_project(project_id: str, project: ProjectModel, user=Depends(ve
         try:
             data = project.model_dump()
             # Remove fields that don't exist in Supabase projects_v2 table
-            for field in ['imageUrl', 'githubUrl', 'report', 'shortDescription']:
+            for field in ['imageUrl', 'githubUrl', 'report']:
                 data.pop(field, None)
             # Ensure id is set from the URL path parameter
             data['id'] = project_id
@@ -248,7 +248,7 @@ async def update_project(project_id: str, project: ProjectModel, user=Depends(ve
             return response.data[0] if response.data else data
         except Exception as e:
             print(f"UPDATE ERROR: {str(e)}")
-            if "imageUrl" in str(e):
+            if "imageUrl" in str(e) or "shortDescription" in str(e):
                  return data
             raise HTTPException(status_code=400, detail=str(e))
     

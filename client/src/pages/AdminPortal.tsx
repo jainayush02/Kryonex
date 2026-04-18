@@ -134,10 +134,13 @@ export default function AdminPortal() {
     e.preventDefault();
 
     const rawFeatures = newProject.features || [];
-    // Remove old GH entry if it exists
-    const finalFeatures = rawFeatures.filter(f => !f.startsWith('GH:'));
+    // Remove old GH and SD entries if they exist
+    const finalFeatures = rawFeatures.filter(f => !f.startsWith('GH:') && !f.startsWith('SD:'));
     if (githubUrl.trim()) {
       finalFeatures.push(`GH:${githubUrl.trim()}`);
+    }
+    if (newProject.shortDescription) {
+      finalFeatures.push(`SD:${newProject.shortDescription}`);
     }
 
     if (newProject.id) {
@@ -623,7 +626,7 @@ export default function AdminPortal() {
             >
               <Card>
                 <CardHeader>
-                  <CardTitle className="font-anta uppercase tracking-wider">New Project</CardTitle>
+                  <CardTitle className="font-anta uppercase tracking-wider">{newProject.id ? 'Edit Project' : 'New Project'}</CardTitle>
                 </CardHeader>
                 <CardContent className="relative min-h-[400px]">
                   {isFetching && (
@@ -723,7 +726,7 @@ export default function AdminPortal() {
                       <textarea
                         className="flex min-h-[80px] w-full rounded-xl border border-slate-200/50 bg-white/40 backdrop-blur-xl px-3 py-2 text-sm shadow-[0_8px_30px_rgb(0,0,0,0.04)] focus:outline-none focus:ring-2 focus:ring-graphite/20 transition-all duration-300 dark:bg-white/5 dark:border-graphite dark:text-slate-200 dark:focus:ring-white/20 resize-none"
                         placeholder="Brief 1-2 sentence overview of the project..."
-                        value={newProject.shortDescription}
+                        value={newProject.shortDescription || ''}
                         onChange={e => setNewProject({ ...newProject, shortDescription: e.target.value })}
                         required
                       />
@@ -741,7 +744,7 @@ export default function AdminPortal() {
                     </div>
                     <div className="flex justify-end gap-3 pt-4">
                       <Button type="button" variant="outline" onClick={() => setIsAdding(false)}>Cancel</Button>
-                      <Button type="submit">Create Project</Button>
+                      <Button type="submit">{newProject.id ? 'Update Project' : 'Create Project'}</Button>
                     </div>
                   </form>
                 </CardContent>
@@ -1026,8 +1029,10 @@ export default function AdminPortal() {
                                 </div>
                                 <div className="flex-1 min-w-0 w-full">
                                   <h3 className="font-bold text-lg truncate text-graphite dark:text-white">{project.title}</h3>
-                                  {project.shortDescription && (
-                                    <p className="text-xs text-slate-400 dark:text-slate-500 line-clamp-1 mt-0.5">{project.shortDescription}</p>
+                                  {(project.shortDescription || project.features?.find(f => f.startsWith('SD:'))?.substring(3)) && (
+                                    <p className="text-xs text-slate-400 dark:text-slate-500 line-clamp-3 mt-0.5">
+                                      {project.shortDescription || project.features?.find(f => f.startsWith('SD:'))?.substring(3)}
+                                    </p>
                                   )}
                                   <div className="text-xs text-slate-500 mt-0.5 font-medium">by {project.authorName}</div>
                                   <div className="flex items-center gap-3 mt-2">
@@ -1049,7 +1054,10 @@ export default function AdminPortal() {
                                         size="sm"
                                         className="text-slate-400 hover:text-graphite dark:hover:text-white hover:bg-white/50 dark:hover:bg-white/10"
                                         onClick={() => {
-                                          setNewProject(project);
+                                          setNewProject({
+                                            ...project,
+                                            shortDescription: project.features?.find(f => f.startsWith('SD:'))?.substring(3) || project.shortDescription || ''
+                                          });
                                           setIsAdding(true);
                                           // Extract GitHub URL from features if present
                                           const gh = project.features?.find(f => f.startsWith('GH:'))?.substring(3) || '';
