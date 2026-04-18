@@ -16,8 +16,31 @@ export function AuthGuard({ children, requireAdmin = false }: AuthGuardProps) {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const currentSsoToken = localStorage.getItem('sso_token');
+
     // Check initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      // If we have an SSO token but no supabase session, we bypass for /portal
+      if (!session && currentSsoToken) {
+        setSession({
+          access_token: currentSsoToken,
+          token_type: 'bearer',
+          expires_in: 3600,
+          refresh_token: '',
+          user: { 
+            id: 'sso-guest', 
+            email: 'portfolio_visitor@sentinell.dev',
+            aud: 'authenticated',
+            role: 'authenticated',
+            app_metadata: {},
+            user_metadata: { name: 'Portfolio Visitor' },
+            created_at: new Date().toISOString()
+          }
+        } as any);
+        setLoading(false);
+        return;
+      }
+
       setSession(session);
       setLoading(false);
       
@@ -59,8 +82,9 @@ export function AuthGuard({ children, requireAdmin = false }: AuthGuardProps) {
   }
 
   // Final check to prevent content flash
+  const isSsoGuest = session?.user?.id === 'sso-guest';
   if (!session) return null;
-  if (requireAdmin && session.user.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) return null;
+  if (requireAdmin && !isSsoGuest && session.user.email?.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) return null;
 
   return <>{children}</>;
 }

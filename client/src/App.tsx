@@ -150,6 +150,16 @@ export default function App() {
       )
       .subscribe();
 
+    // Global SSO Token Detection
+    const urlParams = new URLSearchParams(window.location.search);
+    const ssoToken = urlParams.get('sso_token');
+    if (ssoToken) {
+      localStorage.setItem('sso_token', ssoToken);
+      // Remove token from URL and force redirect to portal
+      window.history.replaceState({}, document.title, window.location.pathname);
+      window.location.href = '/portal';
+    }
+
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);

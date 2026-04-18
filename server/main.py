@@ -1,4 +1,5 @@
 import os
+import jwt
 from fastapi import FastAPI, HTTPException, Request, UploadFile, File, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -28,12 +29,35 @@ app = FastAPI(title="Kryonex API", description="FastAPI Backend for Kryonex Stud
 ADMIN_EMAIL = os.getenv("VITE_ADMIN_EMAIL", "ayushsancheti098@gmail.com").lower()
 
 async def verify_admin(auth: HTTPAuthorizationCredentials = Depends(security)):
+    token = auth.credentials
+    sso_secret = os.getenv("SSO_SHARED_SECRET")
+
+    # 1. Try SSO Token Bypass First
+    if sso_secret and token:
+        try:
+            decoded = jwt.decode(token, sso_secret, algorithms=["HS256"])
+            if decoded.get("role") == "portfolio_visitor" and decoded.get("origin") == "sentinell":
+                # Create a mock user for the SSO guest
+                return {
+                    "id": "sso-guest",
+                    "email": "portfolio_visitor@sentinell.dev",
+                    "role": "guest_admin",
+                    "is_guest": True,
+                    "user_metadata": {"name": "Portfolio Visitor"}
+                }
+        except jwt.ExpiredSignatureError:
+            raise HTTPException(status_code=401, detail="SSO Token Expired")
+        except jwt.InvalidTokenError:
+            pass # Fallback to Supabase
+        except Exception:
+            pass
+
+    # 2. Regular Supabase Auth
     if not supabase:
         raise HTTPException(status_code=503, detail="Supabase not connected")
     
     try:
-        # Verify the user using the provided JWT
-        user_response = supabase.auth.get_user(auth.credentials)
+        user_response = supabase.auth.get_user(token)
         if not user_response.user or user_response.user.email.lower() != ADMIN_EMAIL:
             raise HTTPException(status_code=403, detail="Unauthorized Administrative Access")
         return user_response.user
@@ -169,6 +193,9 @@ async def get_projects():
 
 @app.post("/api/projects")
 async def create_project(project: ProjectModel, user=Depends(verify_admin)):
+    if isinstance(user, dict) and user.get("is_guest"):
+        raise HTTPException(status_code=403, detail="Guest access is read-only. Full administrative login required for this action.")
+    
     if supabase:
         try:
             data = project.model_dump()
@@ -206,6 +233,9 @@ async def create_project(project: ProjectModel, user=Depends(verify_admin)):
 
 @app.put("/api/projects/{project_id}")
 async def update_project(project_id: str, project: ProjectModel, user=Depends(verify_admin)):
+    if isinstance(user, dict) and user.get("is_guest"):
+        raise HTTPException(status_code=403, detail="Guest access is read-only. Full administrative login required for this action.")
+        
     if supabase:
         try:
             data = project.model_dump()
@@ -230,6 +260,9 @@ async def update_project(project_id: str, project: ProjectModel, user=Depends(ve
 
 @app.delete("/api/projects/{project_id}")
 async def delete_project(project_id: str, user=Depends(verify_admin)):
+    if isinstance(user, dict) and user.get("is_guest"):
+        raise HTTPException(status_code=403, detail="Guest access is read-only. Full administrative login required for this action.")
+        
     print(f"Deleting project {project_id}...")
     if supabase:
         try:
@@ -247,6 +280,9 @@ async def delete_project(project_id: str, user=Depends(verify_admin)):
 
 @app.post("/api/projects/reorder")
 async def reorder_projects(order_data: List[dict], user=Depends(verify_admin)):
+    if isinstance(user, dict) and user.get("is_guest"):
+        raise HTTPException(status_code=403, detail="Guest access is read-only.")
+        
     """
     Expects a list of {"id": "...", "display_order": ...}
     """

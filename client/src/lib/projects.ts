@@ -7,9 +7,11 @@ const API_URL = typeof window !== 'undefined' && (window.location.hostname === '
 
 const getAuthHeaders = async () => {
   const { data: { session } } = await supabase.auth.getSession();
+  const ssoToken = localStorage.getItem('sso_token');
+  
   return {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${session?.access_token || ''}`
+    'Authorization': `Bearer ${session?.access_token || ssoToken || ''}`
   };
 };
 
