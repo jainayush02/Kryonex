@@ -96,4 +96,4 @@ Kryonex implements a **Zero-Trust Administrative Policy**:
 
 ## 📜 License
 
-© 2026 Kryonex by Ayush. All rights reserved. Built for the future of AI automation.
+© 2026 Kryonex by Ayush Jain. All rights reserved. Built for the future of AI automation.
