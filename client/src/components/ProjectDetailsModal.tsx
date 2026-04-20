@@ -168,7 +168,7 @@ export function ProjectDetailsModal({ project, onClose, isLiked, onToggleLike }:
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="relative w-full max-w-4xl m-auto bg-white/80 dark:bg-obsidian/80 backdrop-blur-2xl border border-slate-200 dark:border-graphite rounded-3xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col max-h-[85vh]"
+            className="perfect-center w-full max-w-7xl bg-white/80 dark:bg-obsidian/80 backdrop-blur-2xl border border-slate-200 dark:border-graphite rounded-3xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col max-h-[85vh]"
           >
             {/* Modal Header Actions */}
             <div className="absolute top-6 right-6 flex items-center gap-2 z-10">
@@ -200,16 +200,16 @@ export function ProjectDetailsModal({ project, onClose, isLiked, onToggleLike }:
                     </span>
                   ))}
                 </div>
-                <h2 className="text-3xl sm:text-5xl font-bold text-graphite dark:text-white mb-2 tracking-tight">{project.title}</h2>
+                <h2 className="text-xl sm:text-5xl font-bold text-graphite dark:text-white mb-2 tracking-tight">{project.title}</h2>
                 {(project.shortDescription || project.features?.find(f => f.startsWith('SD:'))?.substring(3)) && (
-                  <p className="text-lg text-slate-500 dark:text-slate-400 font-medium mb-3 leading-tight">
+                  <p className="text-sm sm:text-lg text-slate-500 dark:text-slate-400 font-medium mb-3 leading-tight">
                     {project.shortDescription || project.features?.find(f => f.startsWith('SD:'))?.substring(3)}
                   </p>
                 )}
                 <p className="text-xs text-slate-400 font-mono mt-1">by {project.authorName}</p>
               </div>
 
-              <div className="max-w-4xl">
+              <div className="max-w-7xl">
 
                 {/* About / Report Section */}
                 <div className="space-y-6">

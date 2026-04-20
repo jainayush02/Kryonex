@@ -32,6 +32,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = React.useState(false);
   const [showNewPassword, setShowNewPassword] = React.useState(false);
   const [showLoginForm, setShowLoginForm] = React.useState(false);
+  const [isCheckingSession, setIsCheckingSession] = React.useState(true);
   const navigate = useNavigate();
 
   const ADMIN_EMAIL = 'ayushsancheti098@gmail.com';
@@ -64,11 +65,16 @@ export default function LoginPage() {
     // Check for existing session and redirect
     const checkSession = async () => {
       // Skip if we just signed out to prevent race conditions
-      if (lastEvent.current === 'SIGNED_OUT') return;
+      if (lastEvent.current === 'SIGNED_OUT') {
+        setIsCheckingSession(false);
+        return;
+      }
 
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         navigate(isUserAdmin(session.user.email) ? '/admin' : '/portal');
+      } else {
+        setIsCheckingSession(false);
       }
     };
     checkSession();
@@ -79,6 +85,7 @@ export default function LoginPage() {
 
       if (event === 'PASSWORD_RECOVERY') {
         setIsResettingPassword(true);
+        setIsCheckingSession(false);
       } else if (event === 'SIGNED_IN' && session) {
         navigate(isUserAdmin(session.user.email) ? '/admin' : '/portal');
       } else if (event === 'SIGNED_OUT') {
@@ -86,11 +93,16 @@ export default function LoginPage() {
         setIsResettingPassword(false);
         setIsForgotPassword(false);
         setIsVerifyingReset(false);
+        setIsCheckingSession(false);
+      } else if (event === 'INITIAL_SESSION' && !session) {
+        setIsCheckingSession(false);
       }
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
+
+
 
   const gsiInitialized = React.useRef(false);
 
@@ -307,6 +319,20 @@ export default function LoginPage() {
       toast.error('Google Sign-In is initializing. Please try again.');
     }
   };
+
+  if (isCheckingSession) {
+    return (
+      <div className="min-h-screen bg-pearl dark:bg-obsidian flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4 text-center">
+          <div className="w-12 h-12 border-4 border-slate-200 dark:border-graphite border-t-graphite dark:border-t-white rounded-full animate-spin" />
+          <div className="space-y-1">
+            <h2 className="text-sm font-anta tracking-widest text-graphite dark:text-white uppercase">Initializing Sync</h2>
+            <p className="text-[10px] text-slate-500 font-anta uppercase tracking-tight">Checking Secure Uplink...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen lg:h-screen flex flex-col lg:flex-row bg-[#fbfbfb] dark:bg-obsidian transition-colors duration-500 relative overflow-x-hidden lg:overflow-hidden font-anta">

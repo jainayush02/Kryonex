@@ -161,7 +161,7 @@ export function SubmitProjectModal({ isOpen, onClose }: SubmitProjectModalProps)
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 sm:p-6 pt-[5vh]">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -174,7 +174,7 @@ export function SubmitProjectModal({ isOpen, onClose }: SubmitProjectModalProps)
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 30 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="relative w-full max-w-4xl bg-white/90 dark:bg-[#1a1c23]/95 backdrop-blur-2xl border border-slate-200 dark:border-white/5 rounded-2xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] overflow-hidden max-h-[90vh] flex flex-col"
+            className="perfect-center w-full max-w-4xl bg-white/90 dark:bg-[#1a1c23]/95 backdrop-blur-2xl border border-slate-200 dark:border-white/5 rounded-2xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.5)] overflow-hidden max-h-[90vh] flex flex-col"
           >
             <div className="px-8 py-6 border-b border-slate-200/50 dark:border-white/5 flex justify-between items-center shrink-0">
               <h2 className="text-xl font-black text-graphite dark:text-white tracking-widest uppercase font-anta">NEW PROJECT</h2>

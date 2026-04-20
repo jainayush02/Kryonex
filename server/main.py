@@ -114,15 +114,29 @@ SETTINGS_FILE = Path(__file__).parent / "settings.json"
 
 @lru_cache(maxsize=1)
 def get_persisted_settings():
+    if supabase:
+        try:
+            response = supabase.table("site_settings").select("*").limit(1).execute()
+            if response.data:
+                return response.data[0]
+        except: pass
+
     if SETTINGS_FILE.exists():
         try:
             with open(SETTINGS_FILE, "r") as f:
                 return json.load(f)
-        except:
-            pass
+        except: pass
     return {"allow_publish": True}
 
 def save_persisted_settings(settings):
+    if supabase:
+        try:
+            # Upsert into site_settings (assuming id 1 is the container)
+            data = settings.copy()
+            data['id'] = 1
+            supabase.table("site_settings").upsert(data).execute()
+        except: pass
+        
     with open(SETTINGS_FILE, "w") as f:
         json.dump(settings, f)
     get_persisted_settings.cache_clear()
@@ -131,15 +145,33 @@ def save_persisted_settings(settings):
 VAULT_FILE = Path(__file__).parent / "vault.json"
 
 def get_persisted_vault():
+    if supabase:
+        try:
+            response = supabase.table("vault").select("*").execute()
+            return response.data if response.data else []
+        except Exception as e:
+            print(f"Supabase Vault Fetch Error: {e}")
+    
+    # Fallback to file only for local dev without Supabase
     if VAULT_FILE.exists():
         try:
             with open(VAULT_FILE, "r") as f:
                 return json.load(f)
-        except:
-            pass
+        except: pass
     return []
 
 def save_persisted_vault(vault_data):
+    if supabase:
+        try:
+            # Sync by clearing and re-inserting (standard for small admin lists)
+            supabase.table("vault").delete().neq("id", "0").execute()
+            if vault_data:
+                supabase.table("vault").insert(vault_data).execute()
+            return
+        except Exception as e:
+            print(f"Supabase Vault Save Error: {e}")
+            raise e
+            
     with open(VAULT_FILE, "w") as f:
         json.dump(vault_data, f)
 
@@ -162,6 +194,14 @@ class ProjectModel(BaseModel):
     githubUrl: Optional[str] = None
     report: Optional[str] = None
     display_order: Optional[int] = 0
+
+class VaultItemModel(BaseModel):
+    id: str
+    name: str
+    username: Optional[str] = None
+    key: str
+    description: Optional[str] = None
+    createdAt: str
 
 class PushSubscriptionModel(BaseModel):
     endpoint: str
@@ -364,12 +404,29 @@ async def update_settings(settings: SettingsModel, user=Depends(verify_admin)):
 
 @app.get("/api/admin/vault")
 async def get_vault(user=Depends(verify_admin)):
-    return get_persisted_vault()
+    try:
+        data = get_persisted_vault()
+        print(f"Vault requested by {getattr(user, 'email', 'unknown user')}. Found {len(data)} items.")
+        return data
+    except Exception as e:
+        print(f"GET VAULT ERROR: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/admin/vault")
-async def update_vault(vault_data: List[dict], user=Depends(verify_admin)):
-    save_persisted_vault(vault_data)
-    return {"status": "success"}
+async def update_vault(vault_data: List[VaultItemModel], user=Depends(verify_admin)):
+    try:
+        email = getattr(user, 'email', 'unknown user')
+        print(f"Vault update triggered by {email}. Data: {len(vault_data)} items.")
+        
+        # Convert models to dicts for saving
+        data = [item.model_dump() for item in vault_data]
+        save_persisted_vault(data)
+        
+        print(f"Vault successfully updated for {email}")
+        return {"status": "success"}
+    except Exception as e:
+        print(f"POST VAULT ERROR: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to save vault: {str(e)}")
 
 # Push Subscriptions
 SUBSCRIPTIONS_FILE = Path(__file__).parent / "subscriptions.json"

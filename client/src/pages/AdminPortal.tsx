@@ -130,6 +130,13 @@ export default function AdminPortal() {
     }
   };
 
+  const generateUUID = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+      const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+      return v.toString(16);
+    });
+  };
+
   const handleAddProject = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -170,12 +177,6 @@ export default function AdminPortal() {
     const currentUser = currentUserStr ? JSON.parse(currentUserStr) : { name: 'Admin' };
 
     // Use a proper UUID-like format for better database compatibility
-    const generateUUID = () => {
-      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-        const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
-        return v.toString(16);
-      });
-    };
 
     const project: Project = {
       id: generateUUID(),
@@ -366,6 +367,7 @@ export default function AdminPortal() {
   });
 
   return (
+    <>
     <motion.div 
       initial={{ opacity: 0, filter: 'blur(5px)' }}
       animate={{ opacity: 1, filter: 'blur(0px)' }}
@@ -874,20 +876,27 @@ export default function AdminPortal() {
                     <div className="space-y-2 flex items-end sm:col-span-2 lg:col-span-1 pt-2 sm:pt-0">
                       <Button 
                         onClick={async () => {
-                          if (!newVaultItem.name || !newVaultItem.key) return;
-                          const newItem: VaultItem = {
-                            id: crypto.randomUUID(),
-                            name: newVaultItem.name,
-                            username: newVaultItem.username,
-                            key: newVaultItem.key,
-                            description: newVaultItem.description,
-                            createdAt: new Date().toISOString()
-                          };
-                          const newVault = [newItem, ...vault];
-                          await updateVault(newVault);
-                          setVault(newVault);
-                          setNewVaultItem({ name: '', username: '', key: '', description: '' });
-                          toast.success('Key encrypted and stored');
+                          if (!newVaultItem.name || !newVaultItem.key) {
+                            toast.error('Name and Key are required');
+                            return;
+                          }
+                          try {
+                            const newItem: VaultItem = {
+                              id: generateUUID(),
+                              name: newVaultItem.name,
+                              username: newVaultItem.username,
+                              key: newVaultItem.key,
+                              description: newVaultItem.description,
+                              createdAt: new Date().toISOString()
+                            };
+                            const newVault = [newItem, ...vault];
+                            await updateVault(newVault);
+                            setVault(newVault);
+                            setNewVaultItem({ name: '', username: '', key: '', description: '' });
+                            toast.success('Key encrypted and stored');
+                          } catch (error: any) {
+                            toast.error(`Failed to save: ${error.message}`);
+                          }
                         }}
                         className="w-full h-10 bg-purple-600 hover:bg-purple-700 text-white dark:bg-purple-600/20 dark:hover:bg-purple-600/30 dark:text-purple-400 font-bold tracking-wider uppercase border border-purple-500/20 transition-all font-anta"
                       >
@@ -1116,9 +1125,10 @@ export default function AdminPortal() {
           )}
         </div>
       </main>
+    </motion.div>
 
 
       <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
-    </motion.div>
+    </>
   );
 }

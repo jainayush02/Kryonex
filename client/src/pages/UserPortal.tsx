@@ -909,6 +909,7 @@ export default function UserPortal() {
         )}
       </AnimatePresence>
 
+      </motion.div>
       {/* Footer Branding */}
       <footer className="hidden md:flex border-t border-slate-200/50 dark:border-graphite/50 bg-white/40 dark:bg-obsidian/40 backdrop-blur-xl px-8 py-6 items-center justify-between relative z-10">
         <div className="flex items-center gap-2">
@@ -956,7 +957,6 @@ export default function UserPortal() {
           });
         }}
       />
-      </motion.div>
     </div>
   );
 }

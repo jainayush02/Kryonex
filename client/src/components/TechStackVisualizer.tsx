@@ -297,7 +297,7 @@ export function TechStackVisualizer({ project, onClose }: TechStackVisualizerPro
       data: {
         label: (
           <div className="flex flex-col items-center p-2">
-            <div className="font-anta text-2xl font-bold tracking-tight text-graphite dark:text-white uppercase transition-all duration-300">
+            <div className="font-anta text-xl font-bold tracking-tight text-graphite dark:text-white uppercase transition-all duration-300">
               {project.title}
             </div>
           </div>
@@ -309,16 +309,16 @@ export function TechStackVisualizer({ project, onClose }: TechStackVisualizerPro
         border: '2px solid rgba(16, 185, 129, 0.3)',
         borderRadius: '24px',
         color: 'var(--node-text, #1e293b)',
-        padding: '16px 24px',
+        padding: '12px 20px',
         boxShadow: '0 30px 60px -12px rgba(0,0,0,0.25), 0 0 20px rgba(16,185,129,0.05)',
         width: 'auto',
-        minWidth: 200,
+        minWidth: 180,
       }
     });
 
     if (project.techStack && project.techStack.length > 0) {
       // Dynamic radius to prevent overlap based on node count
-      const radius = Math.max(300, project.techStack.length * 45);
+      const radius = Math.max(350, project.techStack.length * 60);
       const angleStep = (2 * Math.PI) / project.techStack.length;
 
       project.techStack.forEach((tech: string, index: number) => {
@@ -459,12 +459,12 @@ export function TechStackVisualizer({ project, onClose }: TechStackVisualizerPro
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="relative w-full max-w-7xl h-[85vh] m-auto bg-white/80 dark:bg-obsidian/95 backdrop-blur-2xl border border-slate-200 dark:border-graphite rounded-2xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col"
+            className="perfect-center w-full max-w-7xl h-[85vh] bg-white/80 dark:bg-obsidian/95 backdrop-blur-2xl border border-slate-200 dark:border-graphite rounded-2xl shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] overflow-hidden flex flex-col"
           >
             <div className="p-4 border-b border-slate-200/50 dark:border-graphite/50 flex justify-between items-center bg-white/40 dark:bg-obsidian/40 shrink-0">
               <div>
-                <h3 className="font-anta font-bold tracking-widest text-graphite dark:text-white uppercase text-sm">System Topology</h3>
-                <p className="text-[10px] font-mono text-slate-500 uppercase tracking-widest pt-0.5">{project.title}</p>
+                <h3 className="font-anta font-bold tracking-widest text-graphite dark:text-white uppercase text-xs sm:text-sm">System Topology</h3>
+                <p className="text-[8px] sm:text-[10px] font-mono text-slate-500 uppercase tracking-widest pt-0.5">{project.title}</p>
               </div>
               <button onClick={onClose} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 text-slate-400 hover:text-graphite dark:hover:text-white transition-all">
                 <X size={20} />
