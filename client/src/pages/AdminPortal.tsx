@@ -372,7 +372,7 @@ export default function AdminPortal() {
       initial={{ opacity: 0, filter: 'blur(5px)' }}
       animate={{ opacity: 1, filter: 'blur(0px)' }}
       transition={{ duration: 0.4, ease: 'easeOut' }}
-      className="min-h-screen bg-pearl dark:bg-obsidian flex transition-colors duration-300"
+      className="h-screen bg-pearl dark:bg-obsidian flex overflow-hidden transition-colors duration-300"
     >
       {/* Mobile Top Header */}
       <nav className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-obsidian/80 backdrop-blur-xl border-b border-slate-200/50 dark:border-graphite/50 px-6 py-4 flex items-center justify-between transition-all duration-300">
