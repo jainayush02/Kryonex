@@ -64,6 +64,12 @@ async def verify_admin(auth: HTTPAuthorizationCredentials = Depends(security)):
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"Invalid Authentication Protocol: {str(e)}")
 
+async def get_admin_optional(auth: Optional[HTTPAuthorizationCredentials] = Depends(security)):
+    try:
+        return await verify_admin(auth)
+    except:
+        return None
+
 # CORS configuration
 origins = os.getenv("ALLOWED_ORIGINS", "").split(",")
 # Default origins for production and development
@@ -112,20 +118,22 @@ if SUPABASE_URL and SUPABASE_KEY:
 # Settings Persistence
 SETTINGS_FILE = Path(__file__).parent / "settings.json"
 
-@lru_cache(maxsize=1)
 def get_persisted_settings():
     if supabase:
         try:
-            response = supabase.table("site_settings").select("*").limit(1).execute()
+            # Explicitly target id=1 for the global settings row
+            response = supabase.table("site_settings").select("*").eq("id", 1).maybe_single().execute()
             if response.data:
-                return response.data[0]
-        except: pass
+                return response.data
+        except Exception as e:
+            print(f"Supabase Settings Fetch Error: {e}")
 
     if SETTINGS_FILE.exists():
         try:
             with open(SETTINGS_FILE, "r") as f:
                 return json.load(f)
-        except: pass
+        except Exception as e:
+            print(f"Local Settings Fetch Error: {e}")
     return {"allow_publish": True}
 
 def save_persisted_settings(settings):
@@ -135,11 +143,14 @@ def save_persisted_settings(settings):
             data = settings.copy()
             data['id'] = 1
             supabase.table("site_settings").upsert(data).execute()
-        except: pass
+        except Exception as e:
+            print(f"Supabase Settings Save Error: {e}")
         
-    with open(SETTINGS_FILE, "w") as f:
-        json.dump(settings, f)
-    get_persisted_settings.cache_clear()
+    try:
+        with open(SETTINGS_FILE, "w") as f:
+            json.dump(settings, f)
+    except Exception as e:
+        print(f"Local Settings Save Error: {e}")
 
 # Vault Persistence (Personal Credentials)
 VAULT_FILE = Path(__file__).parent / "vault.json"
@@ -232,9 +243,15 @@ async def get_projects():
     return MOCK_PROJECTS
 
 @app.post("/api/projects")
-async def create_project(project: ProjectModel, user=Depends(verify_admin)):
-    if isinstance(user, dict) and user.get("is_guest"):
-        raise HTTPException(status_code=403, detail="Guest access is read-only. Full administrative login required for this action.")
+async def create_project(project: ProjectModel, user=Depends(get_admin_optional)):
+    is_admin = user is not None and not (isinstance(user, dict) and user.get("is_guest"))
+    settings = get_persisted_settings()
+    
+    if not is_admin:
+        if not settings.get("allow_publish", True):
+            raise HTTPException(status_code=403, detail="Public project publishing is currently disabled by administrator.")
+        # Force pending status for public submissions
+        project.status = "pending"
     
     if supabase:
         try:
@@ -256,7 +273,7 @@ async def create_project(project: ProjectModel, user=Depends(verify_admin)):
             
             # Send Push Notifications
             try:
-                send_push_notification("New Project!", f"{project.title} by {project.authorName}")
+                send_push_notification("New Project Submission!", f"{project.title} by {project.authorName}")
             except:
                 pass
 

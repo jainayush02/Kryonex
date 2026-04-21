@@ -808,11 +808,12 @@ export default function AdminPortal() {
                       <div className="text-sm text-slate-500 dark:text-slate-400">Controls visibility of "Publish Project" button in User Portal</div>
                     </div>
                     <button 
+                      type="button"
                       onClick={handleTogglePublish}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${siteSettings.allow_publish ? 'bg-graphite dark:bg-white' : 'bg-slate-200 dark:bg-graphite'}`}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 ${siteSettings.allow_publish ? 'bg-indigo-600' : 'bg-slate-200 dark:bg-graphite'}`}
                     >
                       <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white dark:bg-obsidian transition-transform ${siteSettings.allow_publish ? 'translate-x-6' : 'translate-x-1'}`}
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-all duration-300 shadow-sm ${siteSettings.allow_publish ? 'translate-x-6' : 'translate-x-1'}`}
                       />
                     </button>
                   </div>
